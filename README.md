@@ -1,71 +1,61 @@
-# MMM-Template
-Use this template for creating new MagicMirror² modules.
+# MMM-Linky
 
-See the [wiki page](https://github.com/Dennis-Rosenbaum/MMM-Template/wiki) for an in depth overview of how to get started.
+Ce module a été spécialement conçu pour les utilisateurs français possédant un compteur Linky. 
+Grâce à une intégration fluide avec Conso API, il permet de récupérer et d'afficher les données de consommation d'énergie directement sur votre miroir.
 
-# MMM-Template
+Si vous choisissez de récupérer les données de l'année précédente une comparaison sera effectuée et un message vous indiquant si vous avec + ou - consommé sera affiché.
+<br>Le header est également dynamique et changera en fonction de la période sélectionnée !
 
-![Example of MMM-Template](./example_1.png)
+# ScreenShots
 
-[Module description]
+![Conso 7 derniers jours](https://github.com/user-attachments/assets/055eef27-43bb-478c-a2cb-16a451bac5b4)
+![Conso 3 derniers jours](https://github.com/user-attachments/assets/6dacfd38-d78e-4cb3-be22-be8aec980729)
+![Conso veille](https://github.com/user-attachments/assets/6e965953-0c5d-466e-accd-40d09ae3ab71)
 
 ## Installation
-
-### Install
-
-In your terminal, go to your [MagicMirror²][mm] Module folder and clone MMM-Template:
-
-```bash
+```
 cd ~/MagicMirror/modules
-git clone [GitHub url]
+git clone https://github.com/2hdlockness/MMM-Linky
+cd MMM-Linky
+npm install
 ```
-
-### Update
-
-```bash
-cd ~/MagicMirror/modules/MMM-Template
-git pull
-```
-
 ## Using the module
 
-To use this module, add it to the modules array in the `config/config.js` file:
+### Pré-requis :
+- Obtenir un token personnel depuis le site https://conso.boris.sh/
+- Récupérer son numéro PDL Linky (PRM). Vous ne savez pas où le trouver cliquez [ICI](https://www.enedis.fr/faq/compteur-linky/ou-trouver-le-numero-point-de-livraison-pdl-du-compteur-linky)
+
+Pour utiliser ce module, ajoutez-le au tableau modules dans le fichier `config/config.js` :
+
 
 ```js
     {
-        module: 'MMM-Template',
-        position: 'lower_third'
-    },
-```
-
-Or you could use all the options:
-
-```js
-    {
-        module: 'MMM-Template',
-        position: 'lower_third',
-        config: {
-            exampleContent: 'Welcome world'
-        }
+      module: "MMM-Linky",
+      position: "top_left",
+      config: {
+        prm: "",
+        token: "",
+	periode: 1,
+	annee_n_minus_1: 1,
+      },
     },
 ```
 
 ## Configuration options
 
-Option|Possible values|Default|Description
-------|------|------|-----------
-`exampleContent`|`string`|not available|The content to show on the page
+Option|Default|Description
+------|------|-----------
+`prm`||Votre numéro PDL Linky [VOIR ICI](https://www.enedis.fr/faq/compteur-linky/ou-trouver-le-numero-point-de-livraison-pdl-du-compteur-linky)
+`token`||Votre token personnel  [CONSO API](https://conso.boris.sh/)
+`periode`|1|Choix de la période : 1 = Données de la veille, 2 = 3 derniers jours, 3 = 7 derniers jours.
+`annee_n_minus_1`|1|Récupérer les données de l'année précédente. 1 pour activer, 0 pour désactiver.
 
-## Sending notifications to the module
+## Donate:
+Si vous aimez ce module et que vous êtes généreux !<br>
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate?hosted_button_id=DQW6PLJLDDB8L)
+Merci !
 
-Notification|Description
-------|-----------
-`TEMPLATE_RANDOM_TEXT`|Payload must contain the text that needs to be shown on this module
-
-## Developer commands
-
-- `npm install` - Install devDependencies like ESLint.
-- `npm run lint` - Run linting and formatter checks.
-- `npm run lint:fix` - Fix linting and formatter issues.
-
-[mm]: https://github.com/MagicMirrorOrg/MagicMirror
+## Credits:
+- Author :
+  - @2hdlockness
+- License : MIT
