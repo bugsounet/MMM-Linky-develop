@@ -1,30 +1,31 @@
 {
-  "name": "mmm-template",
+  "name": "MMM-Linky",
   "version": "1.0.0",
-  "description": "[Module description]",
-  "main": "MMM-Template.js",
-  "scripts": {
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "test": "npm run lint"
+  "description": "Un module pour récupérer et afficher les données de consommation Linky sur MagicMirror.",
+  "main": "MMM-Linky.js",
+  "dependencies": {
+    "axios": "^1.5.0",
+    "node-schedule": "^2.1.1"
   },
+  "author": "2hdlockness",
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+[GitHub url].git"
+    "url": "https://github.com/2hdlockness/MMM-Linky.git"
   },
   "keywords": [
-    "template"
+    "magicMirror",
+	"module",
+    "linky",
+    "API",
+    "consommation",
+    "électricité",
+	"Enedis",
+    "graphique",
+    "énergie"	
   ],
-  "author": "[Author]",
-  "license": "MIT",
-  "bugs": {
-    "url": "[GitHub url]/issues"
+   "bugs": {
+    "url": "https://github.com/2hdlockness/MMM-Linky/issues"
   },
-  "homepage": "[GitHub url]#readme",
-  "devDependencies": {
-    "@eslint/js": "^9.10.0",
-    "@stylistic/eslint-plugin": "^2.7.2",
-    "eslint": "^9.10.0",
-    "globals": "^15.9.0"
-  }
+  "homepage": "https://github.com/2hdlockness/MMM-Linky#readme"
 }
