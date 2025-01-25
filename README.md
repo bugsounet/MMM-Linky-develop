@@ -6,6 +6,8 @@ Grâce à une intégration fluide avec Conso API, il permet de récupérer et d'
 Si vous choisissez de récupérer les données de l'année précédente une comparaison sera effectuée et un message vous indiquant si vous avec + ou - consommé sera affiché.
 <br>Le header est également dynamique et changera en fonction de la période sélectionnée !
 
+Les données sont actualisées chaque jour entre 10h et 12h.
+
 # ScreenShots
 
 ![Conso 7 derniers jours](https://github.com/user-attachments/assets/055eef27-43bb-478c-a2cb-16a451bac5b4)
