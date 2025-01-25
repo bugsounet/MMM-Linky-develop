@@ -226,7 +226,7 @@ Module.register("MMM-Linky", {
 		  this.ensureChartJsLoaded(() => {
 			this.createChart(chartContainer, days, datasets);
 		  });
-		}, 10000);
+		}, 15000);
 
 		const currentYearTotal = this.calculateTotalConsumption(new Date().getFullYear().toString());
 		const previousYearTotal = this.calculateTotalConsumption((new Date().getFullYear() - 1).toString());
