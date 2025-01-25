@@ -10,8 +10,8 @@ module.exports = NodeHelper.create({
   },
 
 scheduleDataFetch: function () {  
-    const randomHour = Math.floor(Math.random() * (10 - 6 + 1)) + 6;
-    const randomMinute = Math.floor(Math.random() * 60); 
+    const randomHour = Math.floor(Math.random() * (12 - 10 + 1)) + 10;
+    const randomMinute = Math.floor(Math.random() * 60);
     const cronExpression = `${randomMinute} ${randomHour} * * *`;
     const job = schedule.scheduleJob(cronExpression, () => {  
         console.log(`Exécution de la récupération des données à ${randomHour}:${randomMinute < 10 ? '0' : ''}${randomMinute}`);  
@@ -20,6 +20,7 @@ scheduleDataFetch: function () {
 
     console.log(`Tâche planifiée pour ${randomHour}:${randomMinute < 10 ? '0' : ''}${randomMinute} UTC.`);  
 },
+
 
 sendnotificationschedule : function(){
 	this.sendSocketNotification("CONSUMPTION_SCHEDULE");
