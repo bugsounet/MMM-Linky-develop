@@ -14,15 +14,13 @@
     "url": "https://github.com/2hdlockness/MMM-Linky.git"
   },
   "keywords": [
-    "magicMirror",
-	"module",
+    "MagicMirror",
     "linky",
-    "API",
     "consommation",
     "électricité",
-	"Enedis",
-    "graphique",
-    "énergie"	
+    "Enedis",
+    "énergie",
+    "Smart Home",	  
   ],
    "bugs": {
     "url": "https://github.com/2hdlockness/MMM-Linky/issues"
