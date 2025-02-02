@@ -189,7 +189,13 @@ getDom: function () {
 
         let index = 0;
         for (const year in this.consumptionData) {
-            const data = this.consumptionData[year].sort((a, b) => a.day - b.day);
+            const data = this.consumptionData[year].sort((a, b) => {
+                if (a.month === b.month) {
+                    return a.day - b.day;
+                }
+                return a.month - b.month;
+            });
+
             const values = data.map((item) => item.value);
 
             if (index === 0) {
