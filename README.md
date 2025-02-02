@@ -52,6 +52,12 @@ Option|Default|Description
 `periode`|1|Choix de la période : 1 = Données de la veille, 2 = 3 derniers jours, 3 = 7 derniers jours.
 `annee_n_minus_1`|1|Récupérer les données de l'année précédente. 1 pour activer, 0 pour désactiver.
 
+## Update
+```
+cd ~/MagicMirror/modules/MMM-Linky
+git reset --hard HEAD && git pull
+```
+
 ## Donate:
 Si vous aimez ce module et que vous êtes généreux !<br>
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate?hosted_button_id=DQW6PLJLDDB8L)
