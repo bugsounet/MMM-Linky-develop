@@ -28,10 +28,3 @@
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
-
-.const colors = ["rgba(245, 234, 39, 0.8)", "rgba(245, 39, 230, 0.8)"]
-
-canvas {
-  width: 100% !important;
-  height: 400px !important;
-}
