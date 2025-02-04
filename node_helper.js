@@ -7,7 +7,8 @@ module.exports = NodeHelper.create({
   start: function () {
     console.log("MMM-Linky node_helper démarré...");
     this.scheduleDataFetch();
-  },
+  }, 
+  
 
 scheduleDataFetch: function () {  
     const randomHour = Math.floor(Math.random() * (12 - 10 + 1)) + 10;
@@ -26,6 +27,14 @@ sendnotificationschedule : function(){
 	this.sendSocketNotification("CONSUMPTION_SCHEDULE");
 },
 
+socketNotificationReceived: function (notification, payload) {
+
+  if (notification === "GET_CONSUMPTION_DATA") {
+    console.log("Notification GET_CONSUMPTION_DATA reçue, récupération des données...");
+    const { url, token, prm, startDate, endDate, period} = payload;
+    this.getConsumptionData(url, token, prm, startDate, endDate, period);
+  }
+},
 
 getConsumptionData: function (url, token, prm, startDate, endDate, period) {
     const endpoint = `${url}?prm=${prm}&start=${startDate}&end=${endDate}`;
@@ -53,12 +62,4 @@ getConsumptionData: function (url, token, prm, startDate, endDate, period) {
       });
   },
   
-socketNotificationReceived: function (notification, payload) {
-
-  if (notification === "GET_CONSUMPTION_DATA") {
-    console.log("Notification GET_CONSUMPTION_DATA reçue, récupération des données...");
-    const { url, token, prm, startDate, endDate, period} = payload;
-    this.getConsumptionData(url, token, prm, startDate, endDate, period);
-  }
-},
 });
