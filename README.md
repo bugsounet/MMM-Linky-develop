@@ -75,7 +75,7 @@ Option|Default|Description
 `annee_n_minus_1`|1|Récupérer les données de l'année précédente.<br>1 : activer<br>0 : désactiver.
 `couleur`|3| 1 : Bleu et Rose<br>2 : Jaune et Vert<br>3 : Blanc et Bleu<br>4 : Orange et Violet.
 `valuebar`|1|Affiche les valeurs à l'intérieur des barres<br>1 : afficher<br> 0 : masquer
-`valuebartextcolor`|0|Couleur du texte des les valeurs<br> 0 : texte noir<br> 1 : texte blanc
+`valuebartextcolor`|0|Couleur du texte des valeurs<br> 0 : texte noir<br> 1 : texte blanc
 ## Update
 ```
 cd ~/MagicMirror/modules/MMM-Linky
