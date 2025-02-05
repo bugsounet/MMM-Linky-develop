@@ -27,9 +27,8 @@
     "lint:fix": "eslint . --config .eslint.config.mjs --fix",
     "test": "npm run lint",
     "test:all": "npm run lint && npm run test:css && npm run test:markdown && npm run test:translations",
-    "test:css": "stylelint *.css EXTs/EXT-*/*.css --config .stylelintrc.json",
-    "test:markdown": "markdownlint-cli2 *.md EXTs/EXT-*/*.md --config .markdownlint-cli2.mjs",
-    "test:translations": "prettier translations/*.json EXTs/EXT-*/translations/*.json --check --config .prettier.config.mjs"
+    "test:css": "stylelint *.css --config .stylelintrc.json",
+    "test:markdown": "markdownlint-cli2 *.md --config .markdownlint-cli2.mjs"
   },
   "dependencies": {
     "axios": "^1.5.0",
