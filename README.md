@@ -74,13 +74,13 @@ Option|Default|Description
 ---|---|---
 `prm`||Votre numéro PDL Linky [VOIR ICI](https://www.enedis.fr/faq/compteur-linky/ou-trouver-le-numero-point-de-livraison-pdl-du-compteur-linky)
 `token`||Votre token personnel  [CONSO API](https://conso.boris.sh/)
-`periode`|1|Choix de la période: 1 = Données de la veille -- 2 = 3 derniers jours -- 3 = 7 derniers jours.
-`annee_n_minus_1`|1|Récupérer les données de l'année précédente. 1 : activer -- 0 : désactiver.
-`couleur`|3| 1 : Bleu et Rose -- 2 : Jaune et Vert -- 3 : Blanc et Bleu -- 4 : Orange et Violet.
-`valuebar`|1|Affiche les valeurs à l'intérieur des barres. 1 : afficher --  0 : masquer
-`valuebartextcolor`|0|Couleur du texte des valeurs. 0 : texte noir --  1 : texte blanc
+`periode`|1|Choix de la période: <br>`1` = Données de la veille <br>`2` = 3 derniers jours <br>`3` = 7 derniers jours
+`annee_n_minus_1`|1|Récupérer les données de l'année précédente. <br>`1` : activer <br> `0` : désactiver
+`couleur`|3| `1` : Bleu et Rose <br>`2` : Jaune et Vert <br>`3` : Blanc et Bleu <br>`4` : Orange et Violet
+`valuebar`|1|Affiche les valeurs à l'intérieur des barres. <br>`1` : afficher <br>`0` : masquer
+`valuebartextcolor`|0|Couleur du texte des valeurs. <br>`0` : texte noir <br>`1` : texte blanc
 
-## Update
+## Mise à jour
 
 ```sh
 cd ~/MagicMirror/modules/MMM-Linky
@@ -88,7 +88,7 @@ git reset --hard HEAD && git pull
 npm install
 ```
 
-## Donate
+## Faire un don
 
 Si vous aimez ce module et que vous êtes généreux !
 
@@ -96,7 +96,7 @@ Si vous aimez ce module et que vous êtes généreux !
 
 Merci !
 
-## Credits
+## Crédits
 
-* Author : @2hdlockness
+* Auteur : @2hdlockness
 * License : MIT
