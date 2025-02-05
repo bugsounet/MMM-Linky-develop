@@ -7,11 +7,11 @@
 
 .header {
   text-transform: uppercase;
-  text-align: center;  
+  text-align: center;
   font-size: var(--font-size-xsmall);
   font-family: var(--font-primary), Arial, Helvetica, sans-serif;
   font-weight: 400;
-  border-bottom: 1px solid #fff; 
+  border-bottom: 1px solid #fff;
   line-height: 15px;
   padding-bottom: 5px;
   margin-bottom: 10px;
@@ -26,5 +26,5 @@
 
 .chartjs-render-monitor {
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
 }
