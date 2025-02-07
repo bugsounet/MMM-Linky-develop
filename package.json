@@ -1,6 +1,6 @@
 {
   "name": "MMM-Linky",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Un module pour récupérer et afficher les données de consommation Linky sur MagicMirror.",
   "keywords": [
     "MagicMirror",
@@ -20,7 +20,10 @@
     "url": "https://github.com/2hdlockness/MMM-Linky.git"
   },
   "license": "MIT",
-  "author": "2hdlockness",
+  "author": [
+    "2hdlockness",
+    "bugsounet"
+  ],
   "main": "MMM-Linky.js",
   "scripts": {
     "lint": "eslint . --config .eslint.config.mjs",
@@ -31,8 +34,9 @@
     "test:markdown": "markdownlint-cli2 *.md --config .markdownlint-cli2.mjs"
   },
   "dependencies": {
-    "axios": "^1.5.0",
-    "node-schedule": "^2.1.1"
+    "chart.js": "^4.4.7",
+    "chartjs-plugin-datalabels": "^2.2.0",
+    "linky": "^2.1.1"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^3.0.1",
@@ -44,5 +48,6 @@
     "stylelint": "^16.14.1",
     "stylelint-config-standard": "^37.0.0",
     "stylelint-prettier": "^5.0.3"
-  }
+  },
+  "rev": "250207"
 }
