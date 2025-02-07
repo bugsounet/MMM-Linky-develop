@@ -17,10 +17,10 @@ Module.register("MMM-Linky", {
   start () {
     Log.info("[LINKY] MMM-Linky démarré...");
     if (this.config.debug) _linky = (...args) => { console.log("[MMM-Linky]", ...args); };
-    this.consumptionData = {};
     this.chart = null;
     this.ChartJsLoaded = false;
     this.data.header = this.getHeaderText();
+    this.chartsData = {};
   },
 
   getStyles () {
@@ -34,15 +34,52 @@ Module.register("MMM-Linky", {
     ];
   },
 
-  getChartColors () {
-    const colorSchemes = {
-      1: ["rgba(245, 234, 39, 0.8)", "rgba(245, 39, 230, 0.8)"],
-      2: ["rgba(252, 255, 0, 0.8)", "rgba(13, 255, 0, 0.8)"],
-      3: ["rgba(255, 255, 255, 0.8)", "rgba(0, 255, 242, 0.8)"],
-      4: ["rgba(255, 125, 0, 0.8)", "rgba(220, 0, 255, 0.8)"]
-    };
+  notificationReceived (notification) {
+    switch (notification) {
+      case "MODULE_DOM_CREATED":
+        this.sendSocketNotification("INIT", this.config);
+        break;
+    }
+  },
 
-    return colorSchemes[this.config.couleur] || colorSchemes[1];
+  socketNotificationReceived (notification, payload) {
+    switch (notification) {
+      case "ERROR":
+        console.error("[LINKY]", payload);
+        this.displayMessagerie(payload, "warn");
+        break;
+      case "DATA":
+        _linky("Réception des données :", payload);
+        this.chartsData = payload;
+        this.displayChart();
+        break;
+    }
+  },
+
+  getDom () {
+    let wrapper = document.createElement("div");
+    wrapper.id = "MMM-Linky";
+    wrapper.classList.add("animate__animated");
+    wrapper.style.setProperty("--animate-duration", "1s");
+
+    let Messagerie = document.createElement("div");
+    Messagerie.id = "MMM-Linky_Message";
+    Messagerie.textContent = "Chargement...";
+    wrapper.appendChild(Messagerie);
+
+    let chartContainer = document.createElement("canvas");
+    chartContainer.id = "MMM-Linky_Chart";
+    wrapper.appendChild(chartContainer);
+
+    const Energie = document.createElement("div");
+    Energie.id = "MMM-Linky_Energie";
+    wrapper.appendChild(Energie);
+
+    const Update = document.createElement("div");
+    Update.id = "MMM-Linky_Update";
+    wrapper.appendChild(Update);
+
+    return wrapper;
   },
 
   getHeaderText () {
@@ -54,147 +91,53 @@ Module.register("MMM-Linky", {
     return periodTexts[this.config.periode] || "Consommation électricité";
   },
 
-  getDom () {
-    let wrapper = document.createElement("div");
-    wrapper.id = "MMM-Linky";
+  displayChart () {
+    const Linky = document.getElementById("MMM-Linky");
+    Linky.classList.add("animate__fadeOut");
+    Linky.style.setProperty("--animate-duration", "0s");
 
-    if (Object.keys(this.consumptionData).length > 0) {
-      _linky("Données de consommation trouvées, préparation du graphique...", this.consumptionData);
-      const days = [];
-      const datasets = [];
-      const colors = this.getChartColors();
+    const chartContainer = document.getElementById("MMM-Linky_Chart");
 
-      let index = 0;
-      for (const year in this.consumptionData) {
-        const data = this.consumptionData[year].sort((a, b) => {
-          if (a.month === b.month) {
-            return a.day - b.day;
-          }
-          return a.month - b.month;
-        });
-
-        const values = data.map((item) => item.value);
-
-        if (index === 0) {
-          days.push(
-            ...data.map(
-              (item) => `${item.day}-${
-                ["Error", "janv", "févr", "mars", "avr", "mai", "juin", "juil", "août", "sept", "oct", "nov", "déc"][item.month]
-              }`
-            )
-          );
-        }
-
-        datasets.push({
-          label: year,
-          data: values,
-          backgroundColor: colors[index],
-          borderColor: colors[index].replace("0.8", "1"),
-          borderWidth: 1
-        });
-        index++;
-      }
-
-      _linky("Données des graphiques : ", { labels: days, datasets });
-
-      let chartContainer = document.createElement("canvas");
-      chartContainer.id = "MMM-Linky_Chart";
-      wrapper.appendChild(chartContainer);
-
+    if (this.chartsData.labels && this.chartsData.datasets) {
       try {
-        this.createChart(chartContainer, days, datasets);
+        this.displayMessagerie(null, null, true);
+        this.createChart(chartContainer, this.chartsData.labels, this.chartsData.datasets);
         _linky("Graphique créé avec succès");
+        this.displayEnergie();
+        this.displayUpdate();
       } catch (error) {
         console.error("[LINKY] Erreur lors de la création du graphique : ", error);
+        this.displayMessagerie("Erreur lors de la création du graphique", "warn");
       }
-      const messageElement = document.createElement("div");
-      messageElement.id = "MMM-Linky_Energie";
-      wrapper.appendChild(messageElement);
-
     } else {
-      // todo: a revoir (id/css)
-      let waitingMessage = document.createElement("div");
-      waitingMessage.id = "MMM-Linky_Message";
-      waitingMessage.textContent = "Veuillez patienter, vos données arrivent...";
-      waitingMessage.style.color = "#ffffff";
-      waitingMessage.style.textAlign = "center";
-      waitingMessage.style.marginTop = "10px";
-      wrapper.appendChild(waitingMessage);
+      this.displayMessagerie("Veuillez patienter, vos données arrivent...");
     }
 
-    return wrapper;
+    Linky.classList.remove("animate__fadeOut");
+    Linky.style.setProperty("--animate-duration", "1s");
+    Linky.classList.add("animate__fadeIn");
+    setTimeout(() => {
+      Linky.classList.remove("animate__fadeIn");
+    }, 1000);
   },
 
   displayEnergie () {
-    const chartContainer = document.getElementById("MMM-Linky_Chart");
-
-    if (chartContainer.width > 0 && chartContainer.height > 0) {
-      const messageElement = document.getElementById("MMM-Linky_Energie");
-      const currentYearTotal = this.calculateTotalConsumption(new Date().getFullYear().toString());
-      const previousYearTotal = this.calculateTotalConsumption((new Date().getFullYear() - 1).toString());
-
-      let message, color, periodText;
-
-      switch (this.config.periode) {
-        case 1:
-          periodText = "le dernier jour";
-          break;
-        case 2:
-          periodText = "les 3 derniers jours";
-          break;
-        case 3:
-          periodText = "les 7 derniers jours";
-          break;
-        default:
-          periodText = "période inconnue";
-      }
-
-      if (currentYearTotal < previousYearTotal) {
-        message = `Félicitations, votre consommation d'énergie a baissé sur ${periodText} par rapport à l'année dernière !`;
-        color = "green";
-      } else if (currentYearTotal > previousYearTotal) {
-        message = `Attention, votre consommation d'énergie a augmenté sur ${periodText} par rapport à l'année dernière !`;
-        color = "red";
-      } else {
-        message = `Votre consommation d'énergie est stable sur ${periodText} par rapport à l'année dernière.`;
-        color = "yellow";
-      }
-
-      messageElement.textContent = message;
-      messageElement.className = color;
-    } else {
-      console.error("[LINKY] Le graphique n'a pas été affiché correctement.");
-    }
+    const Energie = document.getElementById("MMM-Linky_Energie");
+    Energie.textContent = this.chartsData.energie.message;
+    Energie.className = this.chartsData.energie.color;
   },
 
-  notificationReceived (notification) {
-    switch (notification) {
-      case "MODULE_DOM_CREATED":
-        this.sendSocketNotification("INIT", this.config);
-        break;
-      case "MODULE_DOM_UPDATED":
-        _linky("Fin du updateDom(), mise à jour du texte d'information Energie.");
-        this.displayEnergie();
-        break;
-    }
+  displayUpdate () {
+    const Update = document.getElementById("MMM-Linky_Update");
+    Update.textContent = this.chartsData.update;
   },
 
-  socketNotificationReceived (notification, payload) {
-    switch (notification) {
-      case "ERROR":
-        console.error("[LINKY]", payload);
-        this.sendNotification("SHOW_ALERT", {
-          type: "notification",
-          title: "MMM-Linky",
-          message: payload,
-          timer: 10000
-        });
-        break;
-      case "CONSUMPTION_DATA":
-        this.consumptionData = payload;
-        this.updateDom(1000);
-        break;
-    }
+  displayMessagerie (text, color, hide) {
+    let Messagerie = document.getElementById("MMM-Linky_Message");
+    if (text) Messagerie.textContent = text;
+    if (color) Messagerie.className = color;
+    if (hide) Messagerie.className = "hidden";
+    else Messagerie.classList.remove("hidden");
   },
 
   createChart (chartContainer, days, datasets) {
@@ -247,16 +190,7 @@ Module.register("MMM-Linky", {
       });
     } else {
       console.error("[LINKY] Impossible de créer le graphique : données invalides.");
+      this.displayMessagerie("Impossible de créer le graphique : données invalides.", "warn");
     }
-  },
-
-  calculateTotalConsumption (year) {
-    let total = 0;
-    if (this.consumptionData[year]) {
-      this.consumptionData[year].forEach((data) => {
-        total += data.value;
-      });
-    }
-    return total;
   }
 });

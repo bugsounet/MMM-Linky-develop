@@ -1,4 +1,5 @@
 const NodeHelper = require("node_helper");
+var equal = require("fast-deep-equal");
 
 var log = () => { /* do nothing */ };
 
@@ -9,6 +10,8 @@ module.exports = NodeHelper.create({
     this.config = null;
     this.dates = [];
     this.consumptionData = {};
+    this.currentData = {};
+    this.chartData = {};
   },
 
   socketNotificationReceived (notification, payload) {
@@ -49,47 +52,99 @@ module.exports = NodeHelper.create({
 
   // Récupération des données
   async getConsumptionData () {
-    this.consumptionData = {};
+    this.currentData = {};
     await Promise.all(this.Dates.map(
       async (date) => {
         await this.sendConsumptionRequest(date).then((result) => {
           if (result.start && result.end && result.interval_reading) {
             const year = result.start.split("-")[0];
             log(`-${year}- Données reçues de l'API :`, result);
-            this.consumptionData[year] = [];
+            this.currentData[year] = [];
 
             result.interval_reading.forEach((reading) => {
               const day = parseInt(reading.date.split("-")[2]);
               const month = parseInt(reading.date.split("-")[1]);
               const value = parseFloat(reading.value);
 
-              const isDuplicate = this.consumptionData[year].some(
+              const isDuplicate = this.currentData[year].some(
                 (entry) => entry.day === day && entry.month === month && entry.value === value
               );
 
               if (!isDuplicate) {
-                this.consumptionData[year].push({ day, month, value });
+                this.currentData[year].push({ day, month, value });
               }
             });
           } else {
             console.error("[LINKY] Format inattendu des données :", result);
-            // todo: scan error
-            /*
-            [2025-02-05 20:24:21.575] [ERROR] Erreur lors de la récupération des données : {
-              status: 503,
-              message: 'The Enedis API returned an error',
-              error: {
-                error: 'Service Unavailable',
-                error_description: 'Service unavailable for the moment. Please try later.'
-              }
-            }
-            */
+            if (result.error) this.sendSocketNotification("ERROR", result.error.error);
+            else this.sendSocketNotification("ERROR", "Erreur lors de la collecte de données");
           }
         });
       }
     ));
-    log("Final data:", this.consumptionData);
-    if (Object.keys(this.consumptionData).length) this.sendSocketNotification("CONSUMPTION_DATA", this.consumptionData);
+    if (!equal(this.currentData, this.consumptionData)) {
+      this.consumptionData = this.currentData;
+      log("Données de consommation collecté.", this.consumptionData);
+      this.setChartValue();
+    } else {
+      log("Données identique.");
+    }
+  },
+
+  // création des données chartjs
+  setChartValue () {
+    const days = [];
+    const datasets = [];
+    const colors = this.getChartColors();
+
+    let index = 0;
+    for (const year in this.consumptionData) {
+      const data = this.consumptionData[year].sort((a, b) => {
+        if (a.month === b.month) {
+          return a.day - b.day;
+        }
+        return a.month - b.month;
+      });
+
+      const values = data.map((item) => item.value);
+
+      if (index === 0) {
+        days.push(
+          ...data.map(
+            (item) => `${item.day} ${["Error", "janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."][item.month]}`
+          )
+        );
+      }
+
+      datasets.push({
+        label: year,
+        data: values,
+        backgroundColor: colors[index],
+        borderColor: colors[index].replace("0.8", "1"),
+        borderWidth: 1
+      });
+      index++;
+    }
+
+    log("Données des graphiques :", { labels: days, data: datasets });
+    this.chartData = {
+      labels: days,
+      datasets: datasets,
+      energie: this.setEnergie(),
+      update: `Données du ${new Date(Date.now()).toLocaleString("fr")}`
+    };
+    this.sendSocketNotification("DATA", this.chartData);
+  },
+
+  // Selection schémas de couleurs
+  getChartColors () {
+    const colorSchemes = {
+      1: ["rgba(245, 234, 39, 0.8)", "rgba(245, 39, 230, 0.8)"],
+      2: ["rgba(252, 255, 0, 0.8)", "rgba(13, 255, 0, 0.8)"],
+      3: ["rgba(255, 255, 255, 0.8)", "rgba(0, 255, 242, 0.8)"],
+      4: ["rgba(255, 125, 0, 0.8)", "rgba(220, 0, 255, 0.8)"]
+    };
+    return colorSchemes[this.config.couleur] || colorSchemes[1];
   },
 
   // Demande des datas selon l'API
@@ -101,7 +156,7 @@ module.exports = NodeHelper.create({
     });
   },
 
-  // importation de la librairie linky (dynamic impor)
+  // Importation de la librairie linky (dynamic impor)
   async loadLinky () {
     const loaded = await import("linky");
     return loaded;
@@ -139,11 +194,60 @@ module.exports = NodeHelper.create({
     return new Promise((resolve) => {
       var date = this.calculateDates();
       if (date) Dates.push(date);
-      if (this.config.annee_n_minus_1 === 1) {
+      if (this.config.annee_n_minus_1) {
         date = this.calculateDates(1);
         if (date) Dates.push(date);
       }
       resolve(Dates);
     });
+  },
+
+  // Création du message Energie
+  setEnergie () {
+    const currentYearTotal = this.calculateTotalConsumption(new Date().getFullYear().toString());
+    const previousYearTotal = this.calculateTotalConsumption((new Date().getFullYear() - 1).toString());
+
+    var message, color, periodText;
+
+    switch (this.config.periode) {
+      case 1:
+        periodText = "le dernier jour";
+        break;
+      case 2:
+        periodText = "les 3 derniers jours";
+        break;
+      case 3:
+        periodText = "les 7 derniers jours";
+        break;
+      default:
+        periodText = "période inconnue";
+    }
+
+    if (currentYearTotal < previousYearTotal) {
+      message = `Félicitations, votre consommation d'énergie a baissé sur ${periodText} par rapport à l'année dernière !`;
+      color = "green";
+    } else if (currentYearTotal > previousYearTotal) {
+      message = `Attention, votre consommation d'énergie a augmenté sur ${periodText} par rapport à l'année dernière !`;
+      color = "red";
+    } else {
+      message = `Votre consommation d'énergie est stable sur ${periodText} par rapport à l'année dernière.`;
+      color = "yellow";
+    }
+
+    return {
+      message: message,
+      color: color
+    };
+  },
+
+  // Calcul de la comsommation totale
+  calculateTotalConsumption (year) {
+    let total = 0;
+    if (this.consumptionData[year]) {
+      this.consumptionData[year].forEach((data) => {
+        total += data.value;
+      });
+    }
+    return total;
   }
 });

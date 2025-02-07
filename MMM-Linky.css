@@ -7,11 +7,11 @@
 
 #MMM-Linky_Energie {
   text-align: left;
-  font-size: 16px;
+  font-size: medium;
   max-width: 100%;
   word-wrap: break-word;
   line-height: 1.2;
-  margin-top: 10px;
+  padding: 5px;
 }
 
 #MMM-Linky_Energie.red {
@@ -26,13 +26,38 @@
   color: green;
 }
 
-#energyChart {
-  width: 100% !important;
-  height: 300px;
-  margin-top: 20px;
+#MMM-Linky_Message {
+  color: #ffffff;
+  text-align: center;
+  font-size: medium;
+  max-width: 100%;
+  word-wrap: break-word;
+  line-height: 1.2;
+  padding: 5px;
 }
 
-.chartjs-render-monitor {
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
+#MMM-Linky_Update {
+  text-align: right;
+  font-size: x-small;
+}
+
+#MMM-Linky_Message.hidden {
+  display: none;
+}
+
+#MMM-Linky_Message.warn {
+  color: red;
+  animation: clignotte 1000ms infinite;
+}
+
+@keyframes clignotte {
+   0% {
+      opacity: 0;
+   }
+   40% {
+      opacity: 1;
+   }
+   100% {
+     opacity:0;
+    }
 }
