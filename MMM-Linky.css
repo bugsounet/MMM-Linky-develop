@@ -1,21 +1,29 @@
-.MMM-Linky {
+#MMM-Linky {
   max-width: 350px;
   margin: 0 auto;
   overflow: hidden;
   word-wrap: break-word;
 }
 
-.header {
-  text-transform: uppercase;
-  text-align: center;
-  font-size: var(--font-size-xsmall);
-  font-family: var(--font-primary), Arial, Helvetica, sans-serif;
-  font-weight: 400;
-  border-bottom: 1px solid #fff;
-  line-height: 15px;
-  padding-bottom: 5px;
-  margin-bottom: 10px;
-  color: #fff;
+#MMM-Linky_Energie {
+  text-align: left;
+  font-size: 16px;
+  max-width: 100%;
+  word-wrap: break-word;
+  line-height: 1.2;
+  margin-top: 10px;
+}
+
+#MMM-Linky_Energie.red {
+  color: red;
+}
+
+#MMM-Linky_Energie.yellow {
+  color: yellow;
+}
+
+#MMM-Linky_Energie.green {
+  color: green;
 }
 
 #energyChart {

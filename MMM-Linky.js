@@ -1,5 +1,7 @@
 /* global Chart, ChartDataLabels */
 
+var _linky = () => { /* do nothing */ };
+
 Module.register("MMM-Linky", {
   defaults: {
     debug: false,
@@ -13,7 +15,8 @@ Module.register("MMM-Linky", {
   },
 
   start () {
-    Log.info("MMM-Linky démarré...");
+    Log.info("[LINKY] MMM-Linky démarré...");
+    if (this.config.debug) _linky = (...args) => { console.log("[MMM-Linky]", ...args); };
     this.consumptionData = {};
     this.chart = null;
     this.ChartJsLoaded = false;
@@ -53,9 +56,10 @@ Module.register("MMM-Linky", {
 
   getDom () {
     let wrapper = document.createElement("div");
+    wrapper.id = "MMM-Linky";
 
     if (Object.keys(this.consumptionData).length > 0) {
-      console.log("Données de consommation trouvées, préparation du graphique...", this.consumptionData);
+      _linky("Données de consommation trouvées, préparation du graphique...", this.consumptionData);
       const days = [];
       const datasets = [];
       const colors = this.getChartColors();
@@ -91,71 +95,26 @@ Module.register("MMM-Linky", {
         index++;
       }
 
-      console.log("Données des graphiques : ", { labels: days, datasets });
+      _linky("Données des graphiques : ", { labels: days, datasets });
 
       let chartContainer = document.createElement("canvas");
+      chartContainer.id = "MMM-Linky_Chart";
       wrapper.appendChild(chartContainer);
 
       try {
         this.createChart(chartContainer, days, datasets);
-        console.log("Graphique créé avec succès");
-
-        // todo: A afficher APRES Le dom créé
-        if (chartContainer.width > 0 && chartContainer.height > 0) {
-
-          const currentYearTotal = this.calculateTotalConsumption(new Date().getFullYear().toString());
-          const previousYearTotal = this.calculateTotalConsumption((new Date().getFullYear() - 1).toString());
-
-          let message = "";
-          let color = "";
-          let periodText = "";
-
-          switch (this.config.periode) {
-            case 1:
-              periodText = "le dernier jour";
-              break;
-            case 2:
-              periodText = "les 3 derniers jours";
-              break;
-            case 3:
-              periodText = "les 7 derniers jours";
-              break;
-            default:
-              periodText = "période inconnue";
-          }
-
-          if (currentYearTotal < previousYearTotal) {
-            message = `Félicitations, votre consommation d'énergie a baissé sur ${periodText} par rapport à l'année dernière !`;
-            color = "green";
-          } else if (currentYearTotal > previousYearTotal) {
-            message = `Attention, votre consommation d'énergie a augmenté sur ${periodText} par rapport à l'année dernière !`;
-            color = "red";
-          } else {
-            message = `Votre consommation d'énergie est stable sur ${periodText} par rapport à l'année dernière.`;
-            color = "yellow";
-          }
-
-          // todo: a revoir (mettre ID et utiliser CSS)
-          const messageElement = document.createElement("div");
-          messageElement.innerHTML = `<span style="color: ${color};">${message}</span>`;
-          messageElement.style.textAlign = "left";
-          messageElement.style.fontSize = "16px";
-          messageElement.style.maxWidth = "100%";
-          messageElement.style.wordWrap = "break-word";
-          messageElement.style.lineHeight = "1.2";
-          messageElement.style.marginTop = "10px";
-          wrapper.appendChild(messageElement);
-        } else {
-          console.log("Le graphique n'a pas été affiché correctement, tentative de réinitialisation.");
-        }
-
+        _linky("Graphique créé avec succès");
       } catch (error) {
-        console.error("Erreur lors de la création du graphique : ", error);
+        console.error("[LINKY] Erreur lors de la création du graphique : ", error);
       }
+      const messageElement = document.createElement("div");
+      messageElement.id = "MMM-Linky_Energie";
+      wrapper.appendChild(messageElement);
 
     } else {
       // todo: a revoir (id/css)
       let waitingMessage = document.createElement("div");
+      waitingMessage.id = "MMM-Linky_Message";
       waitingMessage.textContent = "Veuillez patienter, vos données arrivent...";
       waitingMessage.style.color = "#ffffff";
       waitingMessage.style.textAlign = "center";
@@ -166,10 +125,56 @@ Module.register("MMM-Linky", {
     return wrapper;
   },
 
+  displayEnergie () {
+    const chartContainer = document.getElementById("MMM-Linky_Chart");
+
+    if (chartContainer.width > 0 && chartContainer.height > 0) {
+      const messageElement = document.getElementById("MMM-Linky_Energie");
+      const currentYearTotal = this.calculateTotalConsumption(new Date().getFullYear().toString());
+      const previousYearTotal = this.calculateTotalConsumption((new Date().getFullYear() - 1).toString());
+
+      let message, color, periodText;
+
+      switch (this.config.periode) {
+        case 1:
+          periodText = "le dernier jour";
+          break;
+        case 2:
+          periodText = "les 3 derniers jours";
+          break;
+        case 3:
+          periodText = "les 7 derniers jours";
+          break;
+        default:
+          periodText = "période inconnue";
+      }
+
+      if (currentYearTotal < previousYearTotal) {
+        message = `Félicitations, votre consommation d'énergie a baissé sur ${periodText} par rapport à l'année dernière !`;
+        color = "green";
+      } else if (currentYearTotal > previousYearTotal) {
+        message = `Attention, votre consommation d'énergie a augmenté sur ${periodText} par rapport à l'année dernière !`;
+        color = "red";
+      } else {
+        message = `Votre consommation d'énergie est stable sur ${periodText} par rapport à l'année dernière.`;
+        color = "yellow";
+      }
+
+      messageElement.textContent = message;
+      messageElement.className = color;
+    } else {
+      console.error("[LINKY] Le graphique n'a pas été affiché correctement.");
+    }
+  },
+
   notificationReceived (notification) {
     switch (notification) {
       case "MODULE_DOM_CREATED":
         this.sendSocketNotification("INIT", this.config);
+        break;
+      case "MODULE_DOM_UPDATED":
+        _linky("Fin du updateDom(), mise à jour du texte d'information Energie.");
+        this.displayEnergie();
         break;
     }
   },
@@ -241,7 +246,7 @@ Module.register("MMM-Linky", {
         }
       });
     } else {
-      console.log("Impossible de créer le graphique : données invalides.");
+      console.error("[LINKY] Impossible de créer le graphique : données invalides.");
     }
   },
 
