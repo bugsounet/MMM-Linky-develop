@@ -110,6 +110,9 @@ const config = [
       "package-json/valid-name": "off",
       "depend/ban-dependencies": ["error", {"allowed": ["jquery"]}]
     }
+  },
+  {
+    "ignores": ["*.js"]
   }
 ];
 
