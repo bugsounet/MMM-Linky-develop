@@ -28,8 +28,9 @@
   "scripts": {
     "lint": "eslint . --config .eslint.config.mjs",
     "lint:fix": "eslint . --config .eslint.config.mjs --fix",
+    "lint:fix:all": "eslint . --config .eslint.config.mjs --fix && stylelint *.css --config .stylelintrc.json --fix && markdownlint-cli2 *.md --config .markdownlint-cli2.mjs --fix",
     "test": "npm run lint",
-    "test:all": "npm run lint && npm run test:css && npm run test:markdown && npm run test:translations",
+    "test:all": "npm run lint && npm run test:css && npm run test:markdown",
     "test:css": "stylelint *.css --config .stylelintrc.json",
     "test:markdown": "markdownlint-cli2 *.md --config .markdownlint-cli2.mjs"
   },
