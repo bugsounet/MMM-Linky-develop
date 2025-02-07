@@ -72,7 +72,18 @@ module.exports = NodeHelper.create({
               }
             });
           } else {
-            console.error("Format inattendu des données :", result);
+            console.error("[LINKY] Format inattendu des données :", result);
+            // todo: scan error
+            /*
+            [2025-02-05 20:24:21.575] [ERROR] Erreur lors de la récupération des données : {
+              status: 503,
+              message: 'The Enedis API returned an error',
+              error: {
+                error: 'Service Unavailable',
+                error_description: 'Service unavailable for the moment. Please try later.'
+              }
+            }
+            */
           }
         });
       }
@@ -114,7 +125,7 @@ module.exports = NodeHelper.create({
         startDate.setDate(today.getDate() - 7);
         break;
       default:
-        console.error("[Linky] periode invalide.");
+        console.error("[LINKY] periode invalide.");
         this.sendSocketNotification("ERROR", "periode invalide.");
         return null;
     }
