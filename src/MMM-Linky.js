@@ -19,7 +19,7 @@ Module.register("MMM-Linky", {
     if (this.config.debug) _linky = (...args) => { console.log("[MMM-Linky]", ...args); };
     this.chart = null;
     this.ChartJsLoaded = false;
-    if (this.data.header)  this.data.header = undefined
+    if (this.data.header) this.data.header = undefined;
     this.chartsData = {};
   },
 
@@ -61,12 +61,12 @@ Module.register("MMM-Linky", {
     wrapper.id = "MMM-Linky";
 
     let header = document.createElement("div");
-    header.id = "MMM-Linky_Header"
+    header.id = "MMM-Linky_Header";
     header.textContent = this.getHeaderText();
     wrapper.appendChild(header);
 
     let Displayer = document.createElement("div");
-    Displayer.id = "MMM-Linky_Displayer"
+    Displayer.id = "MMM-Linky_Displayer";
     Displayer.classList.add("animate__animated");
     Displayer.style.setProperty("--animate-duration", "1s");
     wrapper.appendChild(Displayer);
