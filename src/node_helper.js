@@ -194,7 +194,7 @@ module.exports = NodeHelper.create({
     return new Promise((resolve) => {
       var date = this.calculateDates();
       if (date) Dates.push(date);
-      if (this.config.annee_n_minus_1) {
+      if (this.config.annee_n_minus_1 === 1) {
         date = this.calculateDates(1);
         if (date) Dates.push(date);
       }
