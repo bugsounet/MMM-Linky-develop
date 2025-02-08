@@ -27,7 +27,7 @@ Possibilité de choisir entre 4 thèmes de couleur pour le graphique et d'affich
 cd ~/MagicMirror/modules
 git clone https://github.com/2hdlockness/MMM-Linky
 cd MMM-Linky
-npm install
+npm run setup
 ```
 
 ## Using the module
@@ -84,8 +84,7 @@ Option|Default|Description
 
 ```sh
 cd ~/MagicMirror/modules/MMM-Linky
-git reset --hard HEAD && git pull
-npm install
+npm run update
 ```
 
 ## Faire un don
@@ -98,5 +97,7 @@ Merci !
 
 ## Crédits
 
-* Auteur : @2hdlockness
+* Auteurs :
+  * @2hdlockness
+  * @bugsounet
 * License : MIT

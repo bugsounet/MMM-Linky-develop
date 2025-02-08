@@ -83,7 +83,7 @@ const config = [
     }
   },
   {
-    "files": [".eslint.config.mjs"],
+    "files": [".*.mjs"],
     "languageOptions": {
       "ecmaVersion": "latest",
       "globals": {
@@ -110,6 +110,9 @@ const config = [
       "package-json/valid-name": "off",
       "depend/ban-dependencies": ["error", {"allowed": ["jquery"]}]
     }
+  },
+  {
+    "ignores": ["*.js"]
   }
 ];
 

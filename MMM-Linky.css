@@ -1,11 +1,11 @@
-.MMM-Linky {
-  max-width: 350px;
+#MMM-Linky {
+  width: 350px;
   margin: 0 auto;
   overflow: hidden;
   word-wrap: break-word;
 }
 
-.header {
+#MMM-Linky_Header {
   text-transform: uppercase;
   text-align: center;
   font-size: var(--font-size-xsmall);
@@ -14,17 +14,66 @@
   border-bottom: 1px solid #fff;
   line-height: 15px;
   padding-bottom: 5px;
+  margin-top: 2px;
   margin-bottom: 10px;
   color: #fff;
 }
 
-#energyChart {
-  width: 100% !important;
-  height: 300px;
-  margin-top: 20px;
+#MMM-Linky_Energie {
+  text-align: left;
+  font-size: medium;
+  max-width: 100%;
+  word-wrap: break-word;
+  line-height: 1.2;
+  padding: 5px;
 }
 
-.chartjs-render-monitor {
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
+#MMM-Linky_Energie.red {
+  color: red;
+}
+
+#MMM-Linky_Energie.yellow {
+  color: yellow;
+}
+
+#MMM-Linky_Energie.green {
+  color: green;
+}
+
+#MMM-Linky_Message {
+  color: #fff;
+  text-align: center;
+  font-size: medium;
+  max-width: 100%;
+  word-wrap: break-word;
+  line-height: 1.2;
+  padding: 5px;
+}
+
+#MMM-Linky_Update {
+  text-align: right;
+  font-size: x-small;
+}
+
+#MMM-Linky_Message.hidden {
+  display: none;
+}
+
+#MMM-Linky_Message.warn {
+  color: red;
+  animation: clignotte 1000ms infinite;
+}
+
+@keyframes clignotte {
+  0% {
+    opacity: 0;
+  }
+
+  40% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
