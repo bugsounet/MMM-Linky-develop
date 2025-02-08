@@ -19,7 +19,7 @@ Module.register("MMM-Linky", {
     if (this.config.debug) _linky = (...args) => { console.log("[MMM-Linky]", ...args); };
     this.chart = null;
     this.ChartJsLoaded = false;
-    this.data.header = this.getHeaderText();
+    if (this.data.header)  this.data.header = undefined
     this.chartsData = {};
   },
 
@@ -59,25 +59,34 @@ Module.register("MMM-Linky", {
   getDom () {
     let wrapper = document.createElement("div");
     wrapper.id = "MMM-Linky";
-    wrapper.classList.add("animate__animated");
-    wrapper.style.setProperty("--animate-duration", "1s");
+
+    let header = document.createElement("div");
+    header.id = "MMM-Linky_Header"
+    header.textContent = this.getHeaderText();
+    wrapper.appendChild(header);
+
+    let Displayer = document.createElement("div");
+    Displayer.id = "MMM-Linky_Displayer"
+    Displayer.classList.add("animate__animated");
+    Displayer.style.setProperty("--animate-duration", "1s");
+    wrapper.appendChild(Displayer);
 
     let Messagerie = document.createElement("div");
     Messagerie.id = "MMM-Linky_Message";
     Messagerie.textContent = "Chargement...";
-    wrapper.appendChild(Messagerie);
+    Displayer.appendChild(Messagerie);
 
     let chartContainer = document.createElement("canvas");
     chartContainer.id = "MMM-Linky_Chart";
-    wrapper.appendChild(chartContainer);
+    Displayer.appendChild(chartContainer);
 
-    const Energie = document.createElement("div");
+    let Energie = document.createElement("div");
     Energie.id = "MMM-Linky_Energie";
-    wrapper.appendChild(Energie);
+    Displayer.appendChild(Energie);
 
-    const Update = document.createElement("div");
+    let Update = document.createElement("div");
     Update.id = "MMM-Linky_Update";
-    wrapper.appendChild(Update);
+    Displayer.appendChild(Update);
 
     return wrapper;
   },
@@ -92,9 +101,9 @@ Module.register("MMM-Linky", {
   },
 
   displayChart () {
-    const Linky = document.getElementById("MMM-Linky");
-    Linky.classList.add("animate__fadeOut");
-    Linky.style.setProperty("--animate-duration", "0s");
+    const Displayer = document.getElementById("MMM-Linky_Displayer");
+    Displayer.classList.add("animate__fadeOut");
+    Displayer.style.setProperty("--animate-duration", "0s");
 
     const chartContainer = document.getElementById("MMM-Linky_Chart");
 
@@ -113,11 +122,11 @@ Module.register("MMM-Linky", {
       this.displayMessagerie("Veuillez patienter, vos données arrivent...");
     }
 
-    Linky.classList.remove("animate__fadeOut");
-    Linky.style.setProperty("--animate-duration", "1s");
-    Linky.classList.add("animate__fadeIn");
+    Displayer.classList.remove("animate__fadeOut");
+    Displayer.style.setProperty("--animate-duration", "1s");
+    Displayer.classList.add("animate__fadeIn");
     setTimeout(() => {
-      Linky.classList.remove("animate__fadeIn");
+      Displayer.classList.remove("animate__fadeIn");
     }, 1000);
   },
 
@@ -174,16 +183,16 @@ Module.register("MMM-Linky", {
             y: {
               ticks: {
                 callback: (value) => `${value / 1000} kWh`,
-                color: "#ffffff"
+                color: "#fff"
               },
               title: {
                 display: true,
                 text: "Consommation (kWh)",
-                color: "#ffffff"
+                color: "#fff"
               }
             },
             x: {
-              ticks: { color: "#ffffff" }
+              ticks: { color: "#fff" }
             }
           }
         }
