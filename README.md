@@ -8,7 +8,7 @@ Si vous choisissez de récupérer les données de l'année précédente une comp
 
 Le header est également dynamique et changera en fonction de la période sélectionnée !
 
-Les données sont actualisées toutes les heures, l'affichage se mettra à jour en cas de nouvelles données reçues. 
+Les données sont actualisées toutes les heures, l'affichage se mettra à jour en cas de nouvelles données reçues.
 
 ## ScreenShots
 
