@@ -1,6 +1,5 @@
 const NodeHelper = require("node_helper");
 const cron = require("node-cron");
-var equal = require("fast-deep-equal");
 
 var log = () => { /* do nothing */ };
 
@@ -92,7 +91,7 @@ module.exports = NodeHelper.create({
         });
       }
     ));
-    if (!equal(this.currentData, this.consumptionData) && !error) {
+    if (!error) {
       this.consumptionData = this.currentData;
       log("Données de consommation collecté.", this.consumptionData);
       this.setChartValue();
