@@ -1,4 +1,5 @@
 const NodeHelper = require("node_helper");
+const cron = require("node-cron");
 var equal = require("fast-deep-equal");
 
 var log = () => { /* do nothing */ };
@@ -44,10 +45,16 @@ module.exports = NodeHelper.create({
 
   // Récupération planifié des données
   scheduleDataFetch () {
-    this.getConsumptionData();
-    setInterval(() => {
+    const randomHour = Math.floor(Math.random() * (12 - 10 + 1)) + 10;
+    const randomMinute = Math.floor(Math.random() * 60);
+    const cronExpression = `${randomMinute} ${randomHour} * * *`;
+    cron.schedule(cronExpression, () => {
+      log(`Exécution de la récupération des données à ${randomHour}:${randomMinute < 10 ? "0" : ""}${randomMinute}`);
       this.getConsumptionData();
-    }, 1000 * 60 * 60);
+    });
+
+    console.log(`[LINKY] Tâche planifiée pour ${randomHour}:${randomMinute < 10 ? "0" : ""}${randomMinute} UTC.`);
+    this.getConsumptionData();
   },
 
   // Récupération des données
