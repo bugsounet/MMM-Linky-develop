@@ -105,12 +105,10 @@ Module.register("MMM-Linky", {
     Displayer.classList.add("animate__fadeOut");
     Displayer.style.setProperty("--animate-duration", "0s");
 
-    const chartContainer = document.getElementById("MMM-Linky_Chart");
-
     if (this.chartsData.labels && this.chartsData.datasets) {
       try {
         this.displayMessagerie(null, null, true);
-        this.createChart(chartContainer, this.chartsData.labels, this.chartsData.datasets);
+        this.createChart(this.chartsData.labels, this.chartsData.datasets);
         _linky("Graphique créé avec succès");
         this.displayEnergie();
         this.displayUpdate();
@@ -149,7 +147,9 @@ Module.register("MMM-Linky", {
     else Messagerie.classList.remove("hidden");
   },
 
-  createChart (chartContainer, days, datasets) {
+  createChart (days, datasets) {
+    const chartContainer = document.getElementById("MMM-Linky_Chart");
+
     if (this.chart && typeof this.chart.destroy === "function") {
       this.chart.destroy();
     }
