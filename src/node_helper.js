@@ -53,6 +53,7 @@ module.exports = NodeHelper.create({
   // Récupération des données
   async getConsumptionData () {
     this.currentData = {};
+    var error = 0;
     await Promise.all(this.Dates.map(
       async (date) => {
         await this.sendConsumptionRequest(date).then((result) => {
@@ -75,19 +76,21 @@ module.exports = NodeHelper.create({
               }
             });
           } else {
+            error = 1;
             console.error("[LINKY] Format inattendu des données :", result);
             if (result.error) this.sendSocketNotification("ERROR", result.error.error);
-            else this.sendSocketNotification("ERROR", "Erreur lors de la collecte de données");
+            else this.sendSocketNotification("ERROR", "Erreur lors de la collecte de données.");
           }
         });
       }
     ));
-    if (!equal(this.currentData, this.consumptionData)) {
+    if (!equal(this.currentData, this.consumptionData) && !error) {
       this.consumptionData = this.currentData;
       log("Données de consommation collecté.", this.consumptionData);
       this.setChartValue();
     } else {
-      log("Données identique.");
+      if (error) log("Il y a des Erreurs API... on va attente le prochain cycle DataFetch");
+      else log("Données identique.");
     }
   },
 
