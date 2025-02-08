@@ -10,7 +10,6 @@ module.exports = NodeHelper.create({
     this.config = null;
     this.dates = [];
     this.consumptionData = {};
-    this.currentData = {};
     this.chartData = {};
   },
 
@@ -59,7 +58,7 @@ module.exports = NodeHelper.create({
 
   // Récupération des données
   async getConsumptionData () {
-    this.currentData = {};
+    this.consumptionData = {};
     var error = 0;
     await Promise.all(this.Dates.map(
       async (date) => {
@@ -67,19 +66,19 @@ module.exports = NodeHelper.create({
           if (result.start && result.end && result.interval_reading) {
             const year = result.start.split("-")[0];
             log(`-${year}- Données reçues de l'API :`, result);
-            this.currentData[year] = [];
+            this.consumptionData[year] = [];
 
             result.interval_reading.forEach((reading) => {
               const day = parseInt(reading.date.split("-")[2]);
               const month = parseInt(reading.date.split("-")[1]);
               const value = parseFloat(reading.value);
 
-              const isDuplicate = this.currentData[year].some(
+              const isDuplicate = this.consumptionData[year].some(
                 (entry) => entry.day === day && entry.month === month && entry.value === value
               );
 
               if (!isDuplicate) {
-                this.currentData[year].push({ day, month, value });
+                this.consumptionData[year].push({ day, month, value });
               }
             });
           } else {
@@ -92,7 +91,6 @@ module.exports = NodeHelper.create({
       }
     ));
     if (!error) {
-      this.consumptionData = this.currentData;
       log("Données de consommation collecté.", this.consumptionData);
       this.setChartValue();
     } else {
