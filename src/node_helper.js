@@ -45,7 +45,7 @@ module.exports = NodeHelper.create({
 
   // Récupération planifié des données
   scheduleDataFetch () {
-    const randomHour = Math.floor(Math.random() * (12 - 10 + 1)) + 10;
+    const randomHour = Math.floor(Math.random() * 3) + 10;
     const randomMinute = Math.floor(Math.random() * 60);
     const cronExpression = `${randomMinute} ${randomHour} * * *`;
     cron.schedule(cronExpression, () => {
@@ -53,7 +53,8 @@ module.exports = NodeHelper.create({
       this.getConsumptionData();
     });
 
-    console.log(`[LINKY] Tâche planifiée pour ${randomHour}:${randomMinute} UTC.`);
+    const fixRandomMinute = randomMinute < 10 ? `0${randomMinute}` : randomMinute;
+    console.log(`[LINKY] Tâche planifiée pour ${randomHour}:${fixRandomMinute} UTC.`);
     this.getConsumptionData();
   },
 
