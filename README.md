@@ -8,7 +8,7 @@ Si vous choisissez de récupérer les données de l'année précédente une comp
 
 Le header est également dynamique et changera en fonction de la période sélectionnée !
 
-Les données sont actualisées chaque jour entre 10h et 13h.
+Les données sont actualisées toutes les heures, l'affichage se mettra à jour en cas de nouvelles données reçues. 
 
 ## ScreenShots
 
@@ -27,7 +27,7 @@ Possibilité de choisir entre 4 thèmes de couleur pour le graphique et d'affich
 cd ~/MagicMirror/modules
 git clone https://github.com/2hdlockness/MMM-Linky
 cd MMM-Linky
-npm install
+npm run setup
 ```
 
 ## Using the module
@@ -84,8 +84,7 @@ Option|Default|Description
 
 ```sh
 cd ~/MagicMirror/modules/MMM-Linky
-git reset --hard HEAD && git pull
-npm install
+npm run update
 ```
 
 ## Faire un don
@@ -98,5 +97,7 @@ Merci !
 
 ## Crédits
 
-* Auteur : @2hdlockness
+* Auteurs :
+  * @2hdlockness
+  * @bugsounet
 * License : MIT
