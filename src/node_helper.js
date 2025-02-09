@@ -138,7 +138,7 @@ module.exports = NodeHelper.create({
     this.chartData = {
       labels: days,
       datasets: datasets,
-      energie: this.setEnergie(),
+      energie: this.config.annee_n_minus_1 === 1 ? this.setEnergie() : null,
       update: `Données du ${new Date(Date.now()).toLocaleString("fr")}`
     };
     this.sendSocketNotification("DATA", this.chartData);
