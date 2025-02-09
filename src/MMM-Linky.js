@@ -110,7 +110,7 @@ Module.register("MMM-Linky", {
         this.displayMessagerie(null, null, true);
         this.createChart(this.chartsData.labels, this.chartsData.datasets);
         _linky("Graphique créé avec succès");
-        this.displayEnergie();
+        if (this.config.annee_n_minus_1 === 1) this.displayEnergie();
         this.displayUpdate();
       } catch (error) {
         console.error("[LINKY] Erreur lors de la création du graphique : ", error);
@@ -167,6 +167,7 @@ Module.register("MMM-Linky", {
           responsive: true,
           plugins: {
             legend: {
+              display: this.config.annee_n_minus_1 === 1 ? true : false,
               labels: { color: "white" }
             },
             datalabels: this.config.valuebar === 1
