@@ -30,6 +30,13 @@ module.exports = NodeHelper.create({
     this.Dates = await this.getDates();
     if (!this.Dates.length) return;
     log("Dates:", this.Dates);
+    process.on("unhandledRejection", (error) => {
+      if (error.response) {
+        if (error.response.status && error.response.message && error.response.error) this.sendSocketNotification("ERROR", error.response.message);
+        else this.sendSocketNotification("ERROR", "Une erreur est survenue");
+        console.error("[LINKY]", error);
+      }
+    });
     const { Session } = await this.loadLinky();
     try {
       this.Linky = new Session(this.config.token, this.config.prm);
