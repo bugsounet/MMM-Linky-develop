@@ -30,6 +30,25 @@ module.exports = NodeHelper.create({
     this.Dates = await this.getDates();
     if (!this.Dates.length) return;
     log("Dates:", this.Dates);
+    process.on("unhandledRejection", (error) => {
+      // catch conso API error and Enedis only
+      if (error.stack.includes("MMM-Linky/node_modules/linky/") && error.response) {
+        // catch Enedis error
+        if (error.response.status && error.response.message && error.response.error) {
+          console.error(`[LINKY] [${error.response.status}] ${error.response.message}`);
+          this.sendSocketNotification("ERROR", error.response.message);
+        } else {
+          // catch Conso API error
+          if (error.message) {
+            console.error(`[LINKY] [${error.code}] ${error.message}`);
+            this.sendSocketNotification("ERROR", `[${error.code}] ${error.message}`);
+          } else {
+            // must never Happen...
+            console.error("[LINKY]", error);
+          }
+        }
+      }
+    });
     const { Session } = await this.loadLinky();
     try {
       this.Linky = new Session(this.config.token, this.config.prm);
@@ -138,7 +157,7 @@ module.exports = NodeHelper.create({
     this.chartData = {
       labels: days,
       datasets: datasets,
-      energie: this.setEnergie(),
+      energie: this.config.annee_n_minus_1 === 1 ? this.setEnergie() : null,
       update: `Données du ${new Date(Date.now()).toLocaleString("fr")}`
     };
     this.sendSocketNotification("DATA", this.chartData);

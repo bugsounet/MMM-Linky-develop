@@ -1,6 +1,6 @@
 {
   "name": "MMM-Linky",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Un module pour récupérer et afficher les données de consommation Linky sur MagicMirror.",
   "keywords": [
     "MagicMirror",
@@ -45,21 +45,21 @@
   "dependencies": {
     "chart.js": "^4.4.7",
     "chartjs-plugin-datalabels": "^2.2.0",
-    "esbuild": "^0.24.2",
+    "esbuild": "^0.25.0",
     "fdir": "^6.4.3",
     "linky": "^2.1.1",
     "node-cron": "^3.0.3"
   },
   "devDependencies": {
-    "@stylistic/eslint-plugin": "^3.0.1",
-    "eslint": "^9.19.0",
+    "@stylistic/eslint-plugin": "^3.1.0",
+    "eslint": "^9.20.0",
     "eslint-plugin-depend": "^0.12.0",
     "eslint-plugin-import-x": "^4.6.1",
-    "eslint-plugin-package-json": "^0.22.0",
+    "eslint-plugin-package-json": "^0.25.0",
     "markdownlint-cli2": "^0.17.2",
     "stylelint": "^16.14.1",
     "stylelint-config-standard": "^37.0.0",
     "stylelint-prettier": "^5.0.3"
   },
-  "rev": "250208"
+  "rev": "250209"
 }
