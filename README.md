@@ -44,6 +44,7 @@ Pour utiliser ce module, ajoutez-le au tableau modules dans le fichier `config/c
       module: "MMM-Linky",
       position: "top_left",
       config: {
+        debug: false,
         prm: "",
         token: "",
         periode: 1,
@@ -72,6 +73,7 @@ Configuration minimale :
 
 Option|Default|Description
 ---|---|---
+`debug`|false|Active le mode débogage
 `prm`||Votre numéro PDL Linky [VOIR ICI](https://www.enedis.fr/faq/compteur-linky/ou-trouver-le-numero-point-de-livraison-pdl-du-compteur-linky)
 `token`||Votre token personnel  [CONSO API](https://conso.boris.sh/)
 `periode`|1|Choix de la période: <br>`1` = Données de la veille <br>`2` = 3 derniers jours <br>`3` = 7 derniers jours
