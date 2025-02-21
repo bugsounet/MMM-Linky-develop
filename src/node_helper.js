@@ -48,8 +48,6 @@ module.exports = NodeHelper.create({
             console.error("[LINKY]", error);
           }
         }
-        this.clearRetryTimer();
-        log("On reste Zen..., nouvelle essai dans une heure");
         this.retryTimer();
       }
     });
@@ -77,7 +75,6 @@ module.exports = NodeHelper.create({
 
   // Récupération des données
   async getConsumptionData () {
-    this.clearRetryTimer();
     this.consumptionData = {};
     var error = 0;
     await Promise.all(this.Dates.map(
@@ -112,9 +109,10 @@ module.exports = NodeHelper.create({
     ));
     if (!error) {
       log("Données de consommation collecté.", this.consumptionData);
+      this.clearRetryTimer();
       this.setChartValue();
     } else {
-      log("Il y a des Erreurs API..., nouvelle essai dans une heure");
+      log("Il y a des Erreurs API...");
       this.retryTimer();
     }
   },
@@ -280,13 +278,19 @@ module.exports = NodeHelper.create({
   },
 
   retryTimer () {
+    if (this.timer) {
+      log("Retry Timer déjà actif:", new Date(Date.now() + this.timer._idleNext.expiry).toLocaleString());
+      return;
+    }
     this.timer = setTimeout(() => {
       this.getConsumptionData();
     }, 1000 * 60 * 60 * 2);
+    log("On reste Zen..., nouvelle essai dans une heure");
   },
 
   clearRetryTimer () {
     clearTimeout(this.timer);
     this.timer = null;
+    log("Retry Timer Kill");
   }
 });
