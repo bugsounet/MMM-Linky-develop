@@ -11,6 +11,7 @@ module.exports = NodeHelper.create({
     this.dates = [];
     this.consumptionData = {};
     this.chartData = {};
+    this.timer = null;
   },
 
   socketNotificationReceived (notification, payload) {
@@ -47,6 +48,9 @@ module.exports = NodeHelper.create({
             console.error("[LINKY]", error);
           }
         }
+        this.clearRetryTimer();
+        log("On reste Zen..., nouvelle essai dans une heure");
+        this.retryTimer();
       }
     });
     const { Session } = await this.loadLinky();
@@ -62,21 +66,18 @@ module.exports = NodeHelper.create({
 
   // Récupération planifié des données
   scheduleDataFetch () {
-    const randomHour = Math.floor(Math.random() * 3) + 10;
-    const randomMinute = Math.floor(Math.random() * 60);
-    const cronExpression = `${randomMinute} ${randomHour} * * *`;
+    const cronExpression = "0 14 * * *";
     cron.schedule(cronExpression, () => {
       log("Exécution de la tâche planifiée de récupération des données.");
       this.getConsumptionData();
     });
 
-    const fixRandomMinute = randomMinute < 10 ? `0${randomMinute}` : randomMinute;
-    console.log(`[LINKY] Tâche planifiée pour ${randomHour}:${fixRandomMinute} UTC.`);
     this.getConsumptionData();
   },
 
   // Récupération des données
   async getConsumptionData () {
+    this.clearRetryTimer();
     this.consumptionData = {};
     var error = 0;
     await Promise.all(this.Dates.map(
@@ -113,8 +114,8 @@ module.exports = NodeHelper.create({
       log("Données de consommation collecté.", this.consumptionData);
       this.setChartValue();
     } else {
-      if (error) log("Il y a des Erreurs API... on va attente le prochain cycle DataFetch");
-      else log("Données identique.");
+      log("Il y a des Erreurs API..., nouvelle essai dans une heure");
+      this.retryTimer();
     }
   },
 
@@ -276,5 +277,16 @@ module.exports = NodeHelper.create({
       });
     }
     return total;
+  },
+
+  retryTimer () {
+    this.timer = setTimeout(() => {
+      this.getConsumptionData();
+    }, 1000 * 60 * 60 * 2);
+  },
+
+  clearRetryTimer () {
+    clearTimeout(this.timer);
+    this.timer = null;
   }
 });
