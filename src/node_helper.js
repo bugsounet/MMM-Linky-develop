@@ -285,7 +285,7 @@ module.exports = NodeHelper.create({
     this.timer = setTimeout(() => {
       this.getConsumptionData();
     }, 1000 * 60 * 60 * 2);
-    log("On reste Zen..., nouvelle essai dans une heure");
+    log("On reste Zen..., nouvelle essai dans deux heures");
   },
 
   clearRetryTimer () {
