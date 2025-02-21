@@ -289,8 +289,8 @@ module.exports = NodeHelper.create({
   },
 
   clearRetryTimer () {
+    if (this.timer) log("Retry Timer Kill");
     clearTimeout(this.timer);
     this.timer = null;
-    log("Retry Timer Kill");
   }
 });
