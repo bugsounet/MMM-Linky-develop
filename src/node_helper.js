@@ -1,5 +1,6 @@
 const NodeHelper = require("node_helper");
 const cron = require("node-cron");
+const { CronExpressionParser } = require("cron-parser");
 
 var log = () => { /* do nothing */ };
 
@@ -9,16 +10,23 @@ module.exports = NodeHelper.create({
     this.Linky = null;
     this.config = null;
     this.dates = [];
-    this.consumptionData = {};
-    this.chartData = {};
     this.timer = null;
+    this.consumptionData = {};
+    this.cronExpression = "0 14 * * *";
+    this.error = null;
   },
 
   socketNotificationReceived (notification, payload) {
     switch (notification) {
       case "INIT":
-        this.config = payload;
-        this.initialize();
+        if (!this.ready) {
+          this.config = payload;
+          this.ready = true;
+          this.chartData = {};
+          this.initialize();
+        } else {
+          this.initWithCache();
+        }
         break;
     }
   },
@@ -37,12 +45,14 @@ module.exports = NodeHelper.create({
         // catch Enedis error
         if (error.response.status && error.response.message && error.response.error) {
           console.error(`[LINKY] [${error.response.status}] ${error.response.message}`);
-          this.sendSocketNotification("ERROR", error.response.message);
+          this.error = error.response.message;
+          this.sendSocketNotification("ERROR", this.error);
         } else {
           // catch Conso API error
           if (error.message) {
             console.error(`[LINKY] [${error.code}] ${error.message}`);
-            this.sendSocketNotification("ERROR", `[${error.code}] ${error.message}`);
+            this.error = `[${error.code}] ${error.message}`;
+            this.sendSocketNotification("ERROR", this.error);
           } else {
             // must never Happen...
             console.error("[LINKY]", error);
@@ -56,21 +66,31 @@ module.exports = NodeHelper.create({
       this.Linky = new Session(this.config.token, this.config.prm);
     } catch (error) {
       console.error(`[LINKY] ${error}`);
-      this.sendSocketNotification("ERROR", error.message);
+      this.error = error.message;
+      this.sendSocketNotification("ERROR", this.error);
       return;
     }
     this.scheduleDataFetch();
   },
 
+  initWithCache () {
+    console.log(`[LINKY] [Cache] MMM-Linky Version: ${require("./package.json").version} Revison: ${require("./package.json").rev}`);
+    if (this.error) this.sendSocketNotification("ERROR", this.error);
+    if (Object.keys(this.chartData).length) this.sendSocketNotification("DATA", this.chartData);
+  },
+
   // Récupération planifié des données
   scheduleDataFetch () {
-    const cronExpression = "0 14 * * *";
-    cron.schedule(cronExpression, () => {
+    const randomMinute = Math.floor(Math.random() * 60);
+    this.cronExpression = `${randomMinute} 14 * * *`;
+    cron.schedule(this.cronExpression, () => {
       log("Exécution de la tâche planifiée de récupération des données.");
       this.getConsumptionData();
+      this.displayNextCron();
     });
 
     this.getConsumptionData();
+    this.displayNextCron();
   },
 
   // Récupération des données
@@ -101,14 +121,20 @@ module.exports = NodeHelper.create({
           } else {
             error = 1;
             console.error("[LINKY] Format inattendu des données :", result);
-            if (result.error) this.sendSocketNotification("ERROR", result.error.error);
-            else this.sendSocketNotification("ERROR", "Erreur lors de la collecte de données.");
+            if (result.error) {
+              this.error = result.error.error;
+              this.sendSocketNotification("ERROR", this.error);
+            } else {
+              this.error = "Erreur lors de la collecte de données.";
+              this.sendSocketNotification("ERROR", this.error);
+            }
           }
         });
       }
     ));
     if (!error) {
-      log("Données de consommation collecté.", this.consumptionData);
+      log("Données de consommation collecté:", this.consumptionData);
+      this.error = null;
       this.clearRetryTimer();
       this.setChartValue();
     } else {
@@ -292,5 +318,10 @@ module.exports = NodeHelper.create({
     if (this.timer) log("Retry Timer Kill");
     clearTimeout(this.timer);
     this.timer = null;
+  },
+
+  displayNextCron () {
+    const next = CronExpressionParser.parse(this.cronExpression, { tz: "Europe/Paris" });
+    log("Prochaine tâche planifiée pour le", new Date(next.next().toString()).toLocaleString("fr"));
   }
 });
