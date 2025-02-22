@@ -8,7 +8,7 @@ Si vous choisissez de récupérer les données de l'année précédente une comp
 
 Le header est également dynamique et changera en fonction de la période sélectionnée !
 
-Les données sont actualisées chaque jour à 14h.
+Les données sont actualisées chaque jour entre 14h et 15h.
 
 ## ScreenShots
 
@@ -96,16 +96,6 @@ Si vous aimez ce module et que vous êtes généreux !
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate?hosted_button_id=DQW6PLJLDDB8L)
 
 Merci !
-
-## ATTENTION
-
-* Conso-Api (et Enedis) impose un quota:
-  * Maximum de 5 requêtes par seconde.
-  * Maximum de 10 000 requêtes par heure.
-* Si vous dépasser cette usage votre adresse IP sera automatiquement blacklisté.
-* Une erreur 403 sera retournée par les serveurs de conso-api.
-* Nous n'avons aucun pouvoir pour supprimer les IP Blacklistés.
-* ⚠ Il est donc préférable de désactiver ce module lors de vos tests!
 
 ## Crédits
 
