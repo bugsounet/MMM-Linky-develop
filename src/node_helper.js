@@ -346,7 +346,7 @@ module.exports = NodeHelper.create({
 
   displayNextCron () {
     const next = CronExpressionParser.parse(this.cronExpression, { tz: "Europe/Paris" });
-    log("Prochaine tâche planifiée pour le", new Date(next.next().toString()).toLocaleString("fr"));
+    log("Prochaine tâche planifiée: le", new Date(next.next().toString()).toLocaleString("fr"));
   },
 
   saveChartData () {
