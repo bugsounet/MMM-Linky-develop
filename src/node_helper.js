@@ -1,23 +1,34 @@
-const NodeHelper = require("node_helper");
+const { writeFile, readFile, access, constants } = require("node:fs");
+const path = require("node:path");
 const cron = require("node-cron");
+const { CronExpressionParser } = require("cron-parser");
+const NodeHelper = require("node_helper");
 
 var log = () => { /* do nothing */ };
 
 module.exports = NodeHelper.create({
-
   start () {
     this.Linky = null;
     this.config = null;
     this.dates = [];
+    this.timer = null;
     this.consumptionData = {};
-    this.chartData = {};
+    this.cronExpression = "0 14 * * *";
+    this.error = null;
+    this.dataFile = path.resolve(__dirname, "linkyData.json");
   },
 
   socketNotificationReceived (notification, payload) {
     switch (notification) {
       case "INIT":
-        this.config = payload;
-        this.initialize();
+        if (!this.ready) {
+          this.config = payload;
+          this.ready = true;
+          this.chartData = {};
+          this.initialize();
+        } else {
+          this.initWithCache();
+        }
         break;
     }
   },
@@ -36,47 +47,76 @@ module.exports = NodeHelper.create({
         // catch Enedis error
         if (error.response.status && error.response.message && error.response.error) {
           console.error(`[LINKY] [${error.response.status}] ${error.response.message}`);
-          this.sendSocketNotification("ERROR", error.response.message);
+          this.error = error.response.message;
+          this.sendSocketNotification("ERROR", this.error);
         } else {
           // catch Conso API error
           if (error.message) {
             console.error(`[LINKY] [${error.code}] ${error.message}`);
-            this.sendSocketNotification("ERROR", `[${error.code}] ${error.message}`);
+            this.error = `[${error.code}] ${error.message}`;
+            this.sendSocketNotification("ERROR", this.error);
           } else {
             // must never Happen...
             console.error("[LINKY]", error);
           }
         }
+        this.retryTimer();
+      } else {
+        console.error("[LINKY] ---------");
+        console.error("[LINKY] Please report this error to developer");
+        console.error("[LINKY] Core Error:", error);
+        console.error("[LINKY] ---------");
       }
     });
-    const { Session } = await this.loadLinky();
-    try {
-      this.Linky = new Session(this.config.token, this.config.prm);
-    } catch (error) {
-      console.error(`[LINKY] ${error}`);
-      this.sendSocketNotification("ERROR", error.message);
-      return;
+
+    await this.readChartData();
+    if (Object.keys(this.chartData).length) {
+      this.sendSocketNotification("DATA", this.chartData);
+    }
+    else {
+      this.getConsumptionData();
     }
     this.scheduleDataFetch();
   },
 
+  async initLinky (callback) {
+    const { Session } = await this.loadLinky();
+    try {
+      this.Linky = new Session(this.config.token, this.config.prm);
+      log("API linky Prête");
+      if (callback) callback();
+    } catch (error) {
+      console.error(`[LINKY] ${error}`);
+      this.error = error.message;
+      this.sendSocketNotification("ERROR", this.error);
+
+    }
+  },
+
+  initWithCache () {
+    console.log(`[LINKY] [Cache] MMM-Linky Version: ${require("./package.json").version} Revison: ${require("./package.json").rev}`);
+    if (this.error) this.sendSocketNotification("ERROR", this.error);
+    if (Object.keys(this.chartData).length) this.sendSocketNotification("DATA", this.chartData);
+  },
+
   // Récupération planifié des données
   scheduleDataFetch () {
-    const randomHour = Math.floor(Math.random() * 3) + 10;
     const randomMinute = Math.floor(Math.random() * 60);
-    const cronExpression = `${randomMinute} ${randomHour} * * *`;
-    cron.schedule(cronExpression, () => {
+    this.cronExpression = `${randomMinute} 14 * * *`;
+    cron.schedule(this.cronExpression, () => {
       log("Exécution de la tâche planifiée de récupération des données.");
       this.getConsumptionData();
+      this.displayNextCron();
     });
-
-    const fixRandomMinute = randomMinute < 10 ? `0${randomMinute}` : randomMinute;
-    console.log(`[LINKY] Tâche planifiée pour ${randomHour}:${fixRandomMinute} UTC.`);
-    this.getConsumptionData();
+    this.displayNextCron();
   },
 
   // Récupération des données
   async getConsumptionData () {
+    if (!this.Linky) {
+      this.initLinky(() => this.getConsumptionData());
+      return;
+    }
     this.consumptionData = {};
     var error = 0;
     await Promise.all(this.Dates.map(
@@ -103,18 +143,25 @@ module.exports = NodeHelper.create({
           } else {
             error = 1;
             console.error("[LINKY] Format inattendu des données :", result);
-            if (result.error) this.sendSocketNotification("ERROR", result.error.error);
-            else this.sendSocketNotification("ERROR", "Erreur lors de la collecte de données.");
+            if (result.error) {
+              this.error = result.error.error;
+              this.sendSocketNotification("ERROR", this.error);
+            } else {
+              this.error = "Erreur lors de la collecte de données.";
+              this.sendSocketNotification("ERROR", this.error);
+            }
           }
         });
       }
     ));
     if (!error) {
-      log("Données de consommation collecté.", this.consumptionData);
+      log("Données de consommation collecté:", this.consumptionData);
+      this.error = null;
+      this.clearRetryTimer();
       this.setChartValue();
     } else {
-      if (error) log("Il y a des Erreurs API... on va attente le prochain cycle DataFetch");
-      else log("Données identique.");
+      log("Il y a des Erreurs API...");
+      this.retryTimer();
     }
   },
 
@@ -158,9 +205,11 @@ module.exports = NodeHelper.create({
       labels: days,
       datasets: datasets,
       energie: this.config.annee_n_minus_1 === 1 ? this.setEnergie() : null,
-      update: `Données du ${new Date(Date.now()).toLocaleString("fr")}`
+      update: `Données du ${new Date(Date.now()).toLocaleString("fr")}`,
+      seed: Date.now()
     };
     this.sendSocketNotification("DATA", this.chartData);
+    this.saveChartData();
   },
 
   // Selection schémas de couleurs
@@ -276,5 +325,71 @@ module.exports = NodeHelper.create({
       });
     }
     return total;
+  },
+
+  retryTimer () {
+    if (this.timer) {
+      log("Retry Timer déjà actif:", new Date(Date.now() + this.timer._idleNext.expiry).toLocaleString());
+      return;
+    }
+    this.timer = setTimeout(() => {
+      this.getConsumptionData();
+    }, 1000 * 60 * 60 * 2);
+    log("On reste Zen..., nouvelle essai dans deux heures");
+  },
+
+  clearRetryTimer () {
+    if (this.timer) log("Retry Timer Kill");
+    clearTimeout(this.timer);
+    this.timer = null;
+  },
+
+  displayNextCron () {
+    const next = CronExpressionParser.parse(this.cronExpression, { tz: "Europe/Paris" });
+    log("Prochaine tâche planifiée: le", new Date(next.next().toString()).toLocaleString("fr"));
+  },
+
+  saveChartData () {
+    const jsonData = JSON.stringify(this.chartData, null, 2);
+    writeFile(this.dataFile, jsonData, "utf8", (err) => {
+      if (err) {
+        console.error("Erreur lors de l'exportation des données", err);
+      } else {
+        log("Les données ont été exporté vers", this.dataFile);
+      }
+    });
+  },
+
+  readChartData () {
+    return new Promise((resolve) => {
+      access(this.dataFile, constants.F_OK, (error) => {
+        if (error) {
+          log("Pas de fichier cache trouvé");
+          this.chartData = {};
+          resolve();
+          return;
+        }
+
+        readFile(this.dataFile, (err, data) => {
+          if (err) {
+            console.error("[LINKY] Erreur de la lecture du fichier cache!", err);
+            this.chartData = {};
+            resolve();
+            return;
+          }
+          const linkyData = JSON.parse(data);
+          const now = Date.now();
+          const next = linkyData.seed + (1000 * 60 * 60 * 24);
+          if (now > next) {
+            log("Les dernieres données reçues sont > 24h, utilisation de l'API...");
+            this.chartData = {};
+          } else {
+            log("Utilisation du cache...");
+            this.chartData = linkyData;
+          }
+          resolve();
+        });
+      });
+    });
   }
 });

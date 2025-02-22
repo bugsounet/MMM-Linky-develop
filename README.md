@@ -8,7 +8,7 @@ Si vous choisissez de récupérer les données de l'année précédente une comp
 
 Le header est également dynamique et changera en fonction de la période sélectionnée !
 
-Les données sont actualisées chaque jour entre 10h et 13h.
+Les données sont actualisées chaque jour entre 14h et 15h.
 
 ## ScreenShots
 
