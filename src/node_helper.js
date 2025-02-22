@@ -1,11 +1,12 @@
-const NodeHelper = require("node_helper");
+const { writeFile, readFile, access, constants } = require("node:fs");
+const path = require("node:path");
 const cron = require("node-cron");
 const { CronExpressionParser } = require("cron-parser");
+const NodeHelper = require("node_helper");
 
 var log = () => { /* do nothing */ };
 
 module.exports = NodeHelper.create({
-
   start () {
     this.Linky = null;
     this.config = null;
@@ -14,6 +15,7 @@ module.exports = NodeHelper.create({
     this.consumptionData = {};
     this.cronExpression = "0 14 * * *";
     this.error = null;
+    this.dataFile = path.resolve(__dirname, "linkyData.json");
   },
 
   socketNotificationReceived (notification, payload) {
@@ -59,18 +61,36 @@ module.exports = NodeHelper.create({
           }
         }
         this.retryTimer();
+      } else {
+        console.error("[LINKY] ---------");
+        console.error("[LINKY] Please report this error to developer");
+        console.error("[LINKY] Core Error:", error);
+        console.error("[LINKY] ---------");
       }
     });
+
+    await this.readChartData();
+    if (Object.keys(this.chartData).length) {
+      this.sendSocketNotification("DATA", this.chartData);
+    }
+    else {
+      this.getConsumptionData();
+    }
+    this.scheduleDataFetch();
+  },
+
+  async initLinky (callback) {
     const { Session } = await this.loadLinky();
     try {
       this.Linky = new Session(this.config.token, this.config.prm);
+      log("API linky Prête");
+      if (callback) callback();
     } catch (error) {
       console.error(`[LINKY] ${error}`);
       this.error = error.message;
       this.sendSocketNotification("ERROR", this.error);
-      return;
+
     }
-    this.scheduleDataFetch();
   },
 
   initWithCache () {
@@ -88,13 +108,15 @@ module.exports = NodeHelper.create({
       this.getConsumptionData();
       this.displayNextCron();
     });
-
-    this.getConsumptionData();
     this.displayNextCron();
   },
 
   // Récupération des données
   async getConsumptionData () {
+    if (!this.Linky) {
+      this.initLinky(() => this.getConsumptionData());
+      return;
+    }
     this.consumptionData = {};
     var error = 0;
     await Promise.all(this.Dates.map(
@@ -183,9 +205,11 @@ module.exports = NodeHelper.create({
       labels: days,
       datasets: datasets,
       energie: this.config.annee_n_minus_1 === 1 ? this.setEnergie() : null,
-      update: `Données du ${new Date(Date.now()).toLocaleString("fr")}`
+      update: `Données du ${new Date(Date.now()).toLocaleString("fr")}`,
+      seed: Date.now()
     };
     this.sendSocketNotification("DATA", this.chartData);
+    this.saveChartData();
   },
 
   // Selection schémas de couleurs
@@ -323,5 +347,49 @@ module.exports = NodeHelper.create({
   displayNextCron () {
     const next = CronExpressionParser.parse(this.cronExpression, { tz: "Europe/Paris" });
     log("Prochaine tâche planifiée pour le", new Date(next.next().toString()).toLocaleString("fr"));
+  },
+
+  saveChartData () {
+    const jsonData = JSON.stringify(this.chartData, null, 2);
+    writeFile(this.dataFile, jsonData, "utf8", (err) => {
+      if (err) {
+        console.error("Erreur lors de l'exportation des données", err);
+      } else {
+        log("Les données ont été exporté vers", this.dataFile);
+      }
+    });
+  },
+
+  readChartData () {
+    return new Promise((resolve) => {
+      access(this.dataFile, constants.F_OK, (error) => {
+        if (error) {
+          log("Pas de fichier cache trouvé");
+          this.chartData = {};
+          resolve();
+          return;
+        }
+
+        readFile(this.dataFile, (err, data) => {
+          if (err) {
+            console.error("[LINKY] Erreur de la lecture du fichier cache!", err);
+            this.chartData = {};
+            resolve();
+            return;
+          }
+          const linkyData = JSON.parse(data);
+          const now = Date.now();
+          const next = linkyData.seed + (1000 * 60 * 60 * 24);
+          if (now > next) {
+            log("Les dernieres données reçues sont > 24h, utilisation de l'API...");
+            this.chartData = {};
+          } else {
+            log("Utilisation du cache...");
+            this.chartData = linkyData;
+          }
+          resolve();
+        });
+      });
+    });
   }
 });
