@@ -43,7 +43,7 @@
     "update": "node installer/update"
   },
   "dependencies": {
-    "chart.js": "^4.4.7",
+    "chart.js": "^4.4.8",
     "chartjs-plugin-datalabels": "^2.2.0",
     "cron-parser": "^5.0.4",
     "esbuild": "^0.25.0",
