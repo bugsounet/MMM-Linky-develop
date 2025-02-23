@@ -13,7 +13,7 @@ module.exports = NodeHelper.create({
     this.dates = [];
     this.timer = null;
     this.consumptionData = {};
-    this.cronExpression = "0 14 * * *";
+    this.cronExpression = "0 0 14 * * *";
     this.error = null;
     this.dataFile = path.resolve(__dirname, "linkyData.json");
   },
@@ -101,8 +101,10 @@ module.exports = NodeHelper.create({
 
   // Récupération planifié des données
   scheduleDataFetch () {
-    const randomMinute = Math.floor(Math.random() * 60);
-    this.cronExpression = `${randomMinute} 14 * * *`;
+    const randomMinute = Math.floor(Math.random() * 59);
+    const randomSecond = Math.floor(Math.random() * 59);
+
+    this.cronExpression = `${randomSecond} ${randomMinute} 14 * * *`;
     cron.schedule(this.cronExpression, () => {
       log("Exécution de la tâche planifiée de récupération des données.");
       this.getConsumptionData();
@@ -329,17 +331,18 @@ module.exports = NodeHelper.create({
 
   retryTimer () {
     if (this.timer) {
-      log("Retry Timer déjà actif:", new Date(Date.now() + this.timer._idleNext.expiry).toLocaleString());
+      log("Retry-Timer déjà actif:", new Date(Date.now() + this.timer._idleNext.expiry).toLocaleString("fr"));
       return;
     }
     this.timer = setTimeout(() => {
+      log("Retry-Timer: Démarrage");
       this.getConsumptionData();
     }, 1000 * 60 * 60 * 2);
-    log("On reste Zen..., nouvelle essai dans deux heures");
+    log("Retry-Timer planifié:", new Date(Date.now() + this.timer._idleNext.expiry).toLocaleString("fr"));
   },
 
   clearRetryTimer () {
-    if (this.timer) log("Retry Timer Kill");
+    if (this.timer) log("Retry-Timer: Arrêt");
     clearTimeout(this.timer);
     this.timer = null;
   },
@@ -378,13 +381,14 @@ module.exports = NodeHelper.create({
             return;
           }
           const linkyData = JSON.parse(data);
+          const seed = new Date(linkyData.seed).toLocaleString("fr");
           const now = Date.now();
-          const next = linkyData.seed + (1000 * 60 * 60 * 24);
+          const next = linkyData.seed + (1000 * 60 * 60 * 12);
           if (now > next) {
-            log("Les dernieres données reçues sont > 24h, utilisation de l'API...");
+            log("Les dernieres données reçues sont > 12h, utilisation de l'API...");
             this.chartData = {};
           } else {
-            log("Utilisation du cache...");
+            log("Utilisation du cache:", seed);
             this.chartData = linkyData;
           }
           resolve();
