@@ -51,7 +51,10 @@ Pour utiliser ce module, ajoutez-le au tableau modules dans le fichier `config/c
         annee_n_minus_1: 1,
         couleur: 3,
         valuebar: 1,
-        valuebartextcolor: 0
+        valuebartextcolor: 0,
+        energie: 1,
+        updateDate: 1,
+        updateNext: 1
       },
     },
 ```
@@ -81,6 +84,9 @@ Option|Default|Description
 `couleur`|3| `1` : Bleu et Rose <br>`2` : Jaune et Vert <br>`3` : Blanc et Bleu <br>`4` : Orange et Violet
 `valuebar`|1|Affiche les valeurs à l'intérieur des barres. <br>`1` : afficher <br>`0` : masquer
 `valuebartextcolor`|0|Couleur du texte des valeurs. <br>`0` : texte noir <br>`1` : texte blanc
+`energie`|1|Affiche l'indicateur de consomation d'énergie. <br>`1` : afficher <br>`0` : masquer
+`updateDate`|1|Affiche la date de récupération des données. <br>`1` : afficher <br>`0` : masquer
+`updateNext`|1|Affiche la date du prochain cycle de récupération des données. <br>`1` : afficher <br>`0` : masquer
 
 ## Mise à jour
 

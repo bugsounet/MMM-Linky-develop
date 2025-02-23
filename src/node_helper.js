@@ -2,6 +2,7 @@ const { writeFile, readFile, access, constants } = require("node:fs");
 const path = require("node:path");
 const cron = require("node-cron");
 const { CronExpressionParser } = require("cron-parser");
+const dayjs = require("dayjs");
 const NodeHelper = require("node_helper");
 
 var log = () => { /* do nothing */ };
@@ -38,8 +39,8 @@ module.exports = NodeHelper.create({
     console.log(`[LINKY] MMM-Linky Version: ${require("./package.json").version} Revison: ${require("./package.json").rev}`);
     if (this.config.debug) log = (...args) => { console.log("[LINKY]", ...args); };
     log("Config:", this.config);
-    this.Dates = await this.getDates();
-    if (!this.Dates.length) return;
+    this.Dates = this.calculateDates();
+    if (!Object.keys(this.Dates).length) return;
     log("Dates:", this.Dates);
     process.on("unhandledRejection", (error) => {
       // catch conso API error and Enedis only
@@ -79,6 +80,7 @@ module.exports = NodeHelper.create({
     this.scheduleDataFetch();
   },
 
+  // Initialisation de l'api linky
   async initLinky (callback) {
     const { Session } = await this.loadLinky();
     try {
@@ -93,6 +95,7 @@ module.exports = NodeHelper.create({
     }
   },
 
+  // Utilisation du cache interne lors d'une utilisation du "mode Server"
   initWithCache () {
     console.log(`[LINKY] [Cache] MMM-Linky Version: ${require("./package.json").version} Revison: ${require("./package.json").rev}`);
     if (this.error) this.sendSocketNotification("ERROR", this.error);
@@ -121,41 +124,66 @@ module.exports = NodeHelper.create({
     }
     this.consumptionData = {};
     var error = 0;
-    await Promise.all(this.Dates.map(
-      async (date) => {
-        await this.sendConsumptionRequest(date).then((result) => {
-          if (result.start && result.end && result.interval_reading) {
-            const year = result.start.split("-")[0];
-            log(`-${year}- Données reçues de l'API :`, result);
-            this.consumptionData[year] = [];
 
-            result.interval_reading.forEach((reading) => {
-              const day = parseInt(reading.date.split("-")[2]);
-              const month = parseInt(reading.date.split("-")[1]);
-              const value = parseFloat(reading.value);
+    await this.sendConsumptionRequest(this.Dates).then((result) => {
+      if (result.start && result.end && result.interval_reading) {
+        log("Données reçues de l'API :", result);
 
-              const isDuplicate = this.consumptionData[year].some(
-                (entry) => entry.day === day && entry.month === month && entry.value === value
-              );
+        result.interval_reading.forEach((reading) => {
+          const year = dayjs(reading.date).get("year");
+          const day = dayjs(reading.date).get("date");
+          const month = dayjs(reading.date).get("month") + 1;
+          const value = parseFloat(reading.value);
 
-              if (!isDuplicate) {
+          if (!this.consumptionData[year]) this.consumptionData[year] = [];
+
+          if (this.config.annee_n_minus_1 === 1) {
+            const current = dayjs();
+            const currentYear = current.year();
+            var testDate = current.subtract(1, "day");
+            if (currentYear === year) {
+              // année en cours
+              switch (this.config.periode) {
+                case 1:
+                  testDate = testDate.subtract(1, "day");
+                  break;
+                case 2:
+                  testDate = testDate.subtract(3, "day");
+                  break;
+                case 3:
+                  testDate = testDate.subtract(7, "day");
+                  break;
+                default:
+                  testDate = current;
+                  break;
+              }
+              if (dayjs(testDate).isBefore(dayjs(reading.date))) {
                 this.consumptionData[year].push({ day, month, value });
               }
-            });
-          } else {
-            error = 1;
-            console.error("[LINKY] Format inattendu des données :", result);
-            if (result.error) {
-              this.error = result.error.error;
-              this.sendSocketNotification("ERROR", this.error);
             } else {
-              this.error = "Erreur lors de la collecte de données.";
-              this.sendSocketNotification("ERROR", this.error);
+              // année precedente
+              testDate = testDate.subtract(1, "year");
+              if (dayjs(reading.date).isBefore(dayjs(testDate))) {
+                this.consumptionData[year].push({ day, month, value });
+              }
             }
+          } else {
+            this.consumptionData[year].push({ day, month, value });
           }
         });
+      } else {
+        error = 1;
+        console.error("[LINKY] Format inattendu des données :", result);
+        if (result.error) {
+          this.error = result.error.error;
+          this.sendSocketNotification("ERROR", this.error);
+        } else {
+          this.error = "Erreur lors de la collecte de données.";
+          this.sendSocketNotification("ERROR", this.error);
+        }
       }
-    ));
+    });
+
     if (!error) {
       log("Données de consommation collecté:", this.consumptionData);
       this.error = null;
@@ -207,8 +235,8 @@ module.exports = NodeHelper.create({
       labels: days,
       datasets: datasets,
       energie: this.config.annee_n_minus_1 === 1 ? this.setEnergie() : null,
-      update: `Données du ${new Date(Date.now()).toLocaleString("fr")}`,
-      seed: Date.now()
+      update: `Données du ${dayjs().format("DD/MM/YYYY -- HH:mm:ss")}`,
+      seed: dayjs().valueOf()
     };
     this.sendSocketNotification("DATA", this.chartData);
     this.saveChartData();
@@ -241,21 +269,20 @@ module.exports = NodeHelper.create({
   },
 
   // cacul des dates périodique
-  calculateDates (yearOffset = 0) {
-    const today = new Date();
-    today.setFullYear(today.getFullYear() - yearOffset);
-    const endDate = today.toISOString().split("T")[0];
-    const startDate = new Date(today);
+  calculateDates () {
+    const endDate = dayjs().format("YYYY-MM-DD");
+    var start = dayjs();
+    if (this.config.annee_n_minus_1 === 1) start = start.subtract(1, "year");
 
     switch (this.config.periode) {
       case 1:
-        startDate.setDate(today.getDate() - 1);
+        start = start.subtract(1, "day");
         break;
       case 2:
-        startDate.setDate(today.getDate() - 3);
+        start = start.subtract(3, "day");
         break;
       case 3:
-        startDate.setDate(today.getDate() - 7);
+        start = start.subtract(7, "day");
         break;
       default:
         console.error("[LINKY] periode invalide.");
@@ -263,27 +290,15 @@ module.exports = NodeHelper.create({
         return null;
     }
 
-    return { startDate: startDate.toISOString().split("T")[0], endDate };
-  },
+    const startDate = dayjs(start).format("YYYY-MM-DD");
 
-  // Récupere les Dates pour l'intérogation de l'API
-  getDates () {
-    var Dates = [];
-    return new Promise((resolve) => {
-      var date = this.calculateDates();
-      if (date) Dates.push(date);
-      if (this.config.annee_n_minus_1 === 1) {
-        date = this.calculateDates(1);
-        if (date) Dates.push(date);
-      }
-      resolve(Dates);
-    });
+    return { startDate, endDate };
   },
 
   // Création du message Energie
   setEnergie () {
-    const currentYearTotal = this.calculateTotalConsumption(new Date().getFullYear().toString());
-    const previousYearTotal = this.calculateTotalConsumption((new Date().getFullYear() - 1).toString());
+    const currentYearTotal = this.calculateTotalConsumption(dayjs().get("year"));
+    const previousYearTotal = this.calculateTotalConsumption(dayjs().subtract(1, "year").get("year"));
 
     var message, color, periodText;
 
@@ -329,29 +344,38 @@ module.exports = NodeHelper.create({
     return total;
   },
 
+  // Retry Timer en cas d'erreur, relance la requete 2 heures apres
   retryTimer () {
     if (this.timer) {
-      log("Retry-Timer déjà actif:", new Date(Date.now() + this.timer._idleNext.expiry).toLocaleString("fr"));
+      log("Retry-Timer déjà actif:", dayjs(dayjs() + this.timer._idleNext.expiry).format("[Le] DD/MM/YYYY -- HH:mm:ss"));
       return;
     }
     this.timer = setTimeout(() => {
       log("Retry-Timer: Démarrage");
       this.getConsumptionData();
     }, 1000 * 60 * 60 * 2);
-    log("Retry-Timer planifié:", new Date(Date.now() + this.timer._idleNext.expiry).toLocaleString("fr"));
+    let job = dayjs(dayjs() + this.timer._idleNext.expiry);
+    log("Retry-Timer planifié:", job.format("[Le] DD/MM/YYYY -- HH:mm:ss"));
+    this.sendTimer(job.valueOf(), job.format("[Le] DD/MM/YYYY -- HH:mm:ss"), "RETRY");
   },
 
+  // Retry Timer kill
   clearRetryTimer () {
     if (this.timer) log("Retry-Timer: Arrêt");
     clearTimeout(this.timer);
     this.timer = null;
+    this.sendTimer(null, null, "RETRY");
   },
 
+  // Affiche la prochaine tache Cron
   displayNextCron () {
     const next = CronExpressionParser.parse(this.cronExpression, { tz: "Europe/Paris" });
-    log("Prochaine tâche planifiée: le", new Date(next.next().toString()).toLocaleString("fr"));
+    let nextCron = dayjs(next.next().toString());
+    log("Prochaine tâche planifiée:", nextCron.format("[Le] DD/MM/YYYY -- HH:mm:ss"));
+    this.sendTimer(nextCron.valueOf(), nextCron.format("[Le] DD/MM/YYYY -- HH:mm:ss"), "CRON");
   },
 
+  // Exporte les donnée Charts vers linkyData.json
   saveChartData () {
     const jsonData = JSON.stringify(this.chartData, null, 2);
     writeFile(this.dataFile, jsonData, "utf8", (err) => {
@@ -363,8 +387,10 @@ module.exports = NodeHelper.create({
     });
   },
 
+  // Lecture du fichier linkyData.json
   readChartData () {
     return new Promise((resolve) => {
+      // verifie la presence
       access(this.dataFile, constants.F_OK, (error) => {
         if (error) {
           log("Pas de fichier cache trouvé");
@@ -373,6 +399,7 @@ module.exports = NodeHelper.create({
           return;
         }
 
+        // lit le fichier
         readFile(this.dataFile, (err, data) => {
           if (err) {
             console.error("[LINKY] Erreur de la lecture du fichier cache!", err);
@@ -381,9 +408,9 @@ module.exports = NodeHelper.create({
             return;
           }
           const linkyData = JSON.parse(data);
-          const seed = new Date(linkyData.seed).toLocaleString("fr");
-          const now = Date.now();
-          const next = linkyData.seed + (1000 * 60 * 60 * 12);
+          const now = dayjs().valueOf();
+          const seed = dayjs(linkyData.seed).format("DD/MM/YYYY -- HH:mm:ss");
+          const next = dayjs(linkyData.seed).add(12, "hour").valueOf();
           if (now > next) {
             log("Les dernieres données reçues sont > 12h, utilisation de l'API...");
             this.chartData = {};
@@ -395,5 +422,15 @@ module.exports = NodeHelper.create({
         });
       });
     });
+  },
+
+  // Envoi l'affichage de la date du prochain update
+  sendTimer (seed, date, type) {
+    let timer = {
+      seed: seed,
+      date: date,
+      type: type
+    };
+    this.sendSocketNotification("TIMERS", timer);
   }
 });
