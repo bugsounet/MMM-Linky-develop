@@ -46,6 +46,7 @@
     "chart.js": "^4.4.8",
     "chartjs-plugin-datalabels": "^2.2.0",
     "cron-parser": "^5.0.4",
+    "dayjs": "^1.11.13",
     "esbuild": "^0.25.0",
     "fdir": "^6.4.3",
     "linky": "^2.1.1",
@@ -62,5 +63,5 @@
     "stylelint-config-standard": "^37.0.0",
     "stylelint-prettier": "^5.0.3"
   },
-  "rev": "250222"
+  "rev": "250224"
 }

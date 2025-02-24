@@ -11,7 +11,10 @@ Module.register("MMM-Linky", {
     annee_n_minus_1: 1,
     couleur: 3,
     valuebar: 1,
-    valuebartextcolor: 0
+    valuebartextcolor: 0,
+    energie: 1,
+    updateDate: 1,
+    updateNext: 1
   },
 
   start () {
@@ -21,6 +24,9 @@ Module.register("MMM-Linky", {
     this.ChartJsLoaded = false;
     if (this.data.header) this.data.header = undefined;
     this.chartsData = {};
+    this.timers = [];
+    this.timers.CRON = null;
+    this.timers.RETRY = null;
   },
 
   getStyles () {
@@ -49,9 +55,23 @@ Module.register("MMM-Linky", {
         this.displayMessagerie(payload, "warn");
         break;
       case "DATA":
-        _linky("Réception des données :", payload);
+        _linky("Réception des données:", payload);
         this.chartsData = payload;
         this.displayChart();
+        break;
+      case "TIMERS":
+        _linky("Réception d'un timer:", payload);
+        if (payload.type) {
+          if (payload.seed === null) {
+            this.timers[payload.type] = null;
+          } else {
+            this.timers[payload.type] = {
+              seed: payload.seed,
+              date: `${this.config.debug ? `[${payload.type}] ` : ""}Prochaine récupération des données: ${payload.date}`
+            };
+          }
+        }
+        this.displayTimer();
         break;
     }
   },
@@ -87,6 +107,10 @@ Module.register("MMM-Linky", {
     let Update = document.createElement("div");
     Update.id = "MMM-Linky_Update";
     Displayer.appendChild(Update);
+
+    let Timer = document.createElement("div");
+    Timer.id = "MMM-Linky_Timer";
+    Displayer.appendChild(Timer);
 
     return wrapper;
   },
@@ -129,14 +153,23 @@ Module.register("MMM-Linky", {
   },
 
   displayEnergie () {
+    if (this.config.energie === 0) return;
     const Energie = document.getElementById("MMM-Linky_Energie");
     Energie.textContent = this.chartsData.energie.message;
     Energie.className = this.chartsData.energie.color;
   },
 
   displayUpdate () {
+    if (this.config.updateDate === 0) return;
     const Update = document.getElementById("MMM-Linky_Update");
     Update.textContent = this.chartsData.update;
+  },
+
+  displayTimer () {
+    if (this.config.updateNext === 0) return;
+    const Timer = document.getElementById("MMM-Linky_Timer");
+    if (this.timers.RETRY?.seed < this.timers.CRON.seed) Timer.textContent = this.timers.RETRY.date;
+    else Timer.textContent = this.timers.CRON.date;
   },
 
   displayMessagerie (text, color, hide) {
