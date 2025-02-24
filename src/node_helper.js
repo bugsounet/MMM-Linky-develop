@@ -64,10 +64,16 @@ module.exports = NodeHelper.create({
         }
         this.retryTimer();
       } else {
-        console.error("[LINKY] ---------");
-        console.error("[LINKY] Please report this error to developer");
-        console.error("[LINKY] Core Error:", error);
-        console.error("[LINKY] ---------");
+        // detect any errors of node_helper of MMM-Linky
+        if (error.stack.includes("MMM-Linky/node_helper.js")) {
+          console.error("[LINKY] ---------");
+          console.error("[LINKY] Please report this error to developer");
+          console.error("[LINKY] Core Error:", error);
+          console.error("[LINKY] ---------");
+        } else {
+          // from other modules
+          console.error(error);
+        }
       }
     });
 
