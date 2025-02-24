@@ -63,5 +63,5 @@
     "stylelint-config-standard": "^37.0.0",
     "stylelint-prettier": "^5.0.3"
   },
-  "rev": "250224"
+  "rev": "250225"
 }
