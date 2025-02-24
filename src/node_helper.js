@@ -17,6 +17,7 @@ module.exports = NodeHelper.create({
     this.cronExpression = "0 0 14 * * *";
     this.error = null;
     this.dataFile = path.resolve(__dirname, "linkyData.json");
+    this.timers = {};
   },
 
   socketNotificationReceived (notification, payload) {
@@ -100,6 +101,7 @@ module.exports = NodeHelper.create({
     console.log(`[LINKY] [Cache] MMM-Linky Version: ${require("./package.json").version} Revison: ${require("./package.json").rev}`);
     if (this.error) this.sendSocketNotification("ERROR", this.error);
     if (Object.keys(this.chartData).length) this.sendSocketNotification("DATA", this.chartData);
+    if (Object.keys(this.timers).length) this.sendTimers();
   },
 
   // Récupération planifié des données
@@ -346,10 +348,7 @@ module.exports = NodeHelper.create({
 
   // Retry Timer en cas d'erreur, relance la requete 2 heures apres
   retryTimer () {
-    if (this.timer) {
-      log("Retry-Timer déjà actif:", dayjs(dayjs() + this.timer._idleNext.expiry).format("[Le] DD/MM/YYYY -- HH:mm:ss"));
-      return;
-    }
+    if (this.timer) this.clearRetryTimer();
     this.timer = setTimeout(() => {
       log("Retry-Timer: Démarrage");
       this.getConsumptionData();
@@ -431,6 +430,15 @@ module.exports = NodeHelper.create({
       date: date,
       type: type
     };
+    this.timers[type] = timer;
     this.sendSocketNotification("TIMERS", timer);
+  },
+
+  // envoi l'affichage de tous les timers (server mode)
+  sendTimers () {
+    const timers = Object.values(this.timers);
+    timers.forEach((timer) => {
+      this.sendSocketNotification("TIMERS", timer);
+    });
   }
 });
