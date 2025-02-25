@@ -37,39 +37,13 @@ module.exports = NodeHelper.create({
 
   // intialisation de MMM-Linky
   async initialize () {
+    this.catchError();
     console.log(`[LINKY] MMM-Linky Version: ${require("./package.json").version} Revison: ${require("./package.json").rev}`);
     if (this.config.debug) log = (...args) => { console.log("[LINKY]", ...args); };
     log("Config:", this.config);
     this.Dates = this.calculateDates();
     if (!Object.keys(this.Dates).length) return;
     log("Dates:", this.Dates);
-    process.on("unhandledRejection", (error) => {
-      // catch conso API error and Enedis only
-      if (error.stack.includes("MMM-Linky/node_modules/linky/") && error.response) {
-        // catch Enedis error
-        if (error.response.status && error.response.message && error.response.error) {
-          console.error(`[LINKY] [${error.response.status}] ${error.response.message}`);
-          this.error = error.response.message;
-          this.sendSocketNotification("ERROR", this.error);
-        } else {
-          // catch Conso API error
-          if (error.message) {
-            console.error(`[LINKY] [${error.code}] ${error.message}`);
-            this.error = `[${error.code}] ${error.message}`;
-            this.sendSocketNotification("ERROR", this.error);
-          } else {
-            // must never Happen...
-            console.error("[LINKY]", error);
-          }
-        }
-        this.retryTimer();
-      } else {
-        console.error("[LINKY] ---------");
-        console.error("[LINKY] Please report this error to developer");
-        console.error("[LINKY] Core Error:", error);
-        console.error("[LINKY] ---------");
-      }
-    });
 
     await this.readChartData();
     if (Object.keys(this.chartData).length) {
@@ -92,7 +66,6 @@ module.exports = NodeHelper.create({
       console.error(`[LINKY] ${error}`);
       this.error = error.message;
       this.sendSocketNotification("ERROR", this.error);
-
     }
   },
 
@@ -440,5 +413,59 @@ module.exports = NodeHelper.create({
     timers.forEach((timer) => {
       this.sendSocketNotification("TIMERS", timer);
     });
+  },
+
+  catchError () {
+    process.on("unhandledRejection", (error) => {
+      // catch conso API error and Enedis only
+      if (error.stack.includes("MMM-Linky/node_modules/linky/") && error.response) {
+        // catch Enedis error
+        if (error.response.status && error.response.message && error.response.error) {
+          console.error(`[LINKY] [${error.response.status}] ${error.response.message}`);
+          this.error = error.response.message;
+          this.sendSocketNotification("ERROR", this.error);
+        } else {
+          // catch Conso API error
+          if (error.message) {
+            console.error(`[LINKY] [${error.code}] ${error.message}`);
+            this.error = `[${error.code}] ${error.message}`;
+            this.sendSocketNotification("ERROR", this.error);
+          } else {
+            // must never Happen...
+            console.error("[LINKY]", error);
+          }
+        }
+        this.retryTimer();
+      } else {
+        // detect any errors of node_helper of MMM-Linky
+        if (error.stack.includes("MMM-Linky/node_helper.js")) {
+          console.error(`[LINKY] ${this._citation()}`);
+          console.error("[LINKY] Merci de signaler cette erreur aux développeurs");
+          console.error("[LINKY] ---------");
+          console.error("[LINKY] node_helper Error:", error);
+          console.error("[LINKY] ---------");
+        } else {
+          // from other modules (must never happen... but...)
+          console.error("-Other-", error);
+        }
+      }
+    });
+  },
+
+  _citation () {
+    let citations = [
+      "J'ai glissé, chef !",
+      "Mirabelle appelle Églantine...",
+      "Mais tremblez pas comme ça, ça fait de la mousse !!!",
+      "C'est dur d'être chef, Chef ?",
+      "Un lapin, chef !",
+      "Fou afez trop chaud ou fou afez trop froid ? ",
+      "Restez groupire!",
+      "On fait pas faire des mouvements respiratoires à un type qu'a les bras cassés !!!",
+      "Si j’connaissais l’con qui a fait sauter l’pont...",
+      "Le fil rouge sur le bouton rouge, le fil bleu sur le bouton bleu."
+    ];
+    const random = Math.floor(Math.random() * citations.length);
+    return citations[random];
   }
 });
