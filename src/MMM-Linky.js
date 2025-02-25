@@ -4,7 +4,7 @@ var _linky = () => { /* do nothing */ };
 
 Module.register("MMM-Linky", {
   defaults: {
-    debug: false,
+    debug: 0,
     token: "",
     prm: "",
     periode: 1,
@@ -12,6 +12,7 @@ Module.register("MMM-Linky", {
     couleur: 3,
     valuebar: 1,
     valuebartextcolor: 0,
+    header: 1,
     energie: 1,
     updateDate: 1,
     updateNext: 1
@@ -20,9 +21,9 @@ Module.register("MMM-Linky", {
   start () {
     Log.info("[LINKY] MMM-Linky démarré...");
     if (this.config.debug) _linky = (...args) => { console.log("[MMM-Linky]", ...args); };
+    if (this.config.header) this.data.header = this.getHeaderText();
     this.chart = null;
     this.ChartJsLoaded = false;
-    if (this.data.header) this.data.header = undefined;
     this.chartsData = {};
     this.timers = [];
     this.timers.CRON = null;
@@ -79,11 +80,6 @@ Module.register("MMM-Linky", {
   getDom () {
     let wrapper = document.createElement("div");
     wrapper.id = "MMM-Linky";
-
-    let header = document.createElement("div");
-    header.id = "MMM-Linky_Header";
-    header.textContent = this.getHeaderText();
-    wrapper.appendChild(header);
 
     let Displayer = document.createElement("div");
     Displayer.id = "MMM-Linky_Displayer";
