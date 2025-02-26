@@ -68,7 +68,7 @@ Module.register("MMM-Linky", {
           } else {
             this.timers[payload.type] = {
               seed: payload.seed,
-              date: `${this.config.debug ? `[${payload.type}] ` : ""}Prochaine récupération des données: ${payload.date}`
+              date: `Prochaine récupération des données: ${payload.date}`
             };
           }
         }

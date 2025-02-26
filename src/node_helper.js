@@ -3,6 +3,9 @@ const path = require("node:path");
 const cron = require("node-cron");
 const { CronExpressionParser } = require("cron-parser");
 const dayjs = require("dayjs");
+const isBetween = require("dayjs/plugin/isBetween");
+
+dayjs.extend(isBetween);
 const NodeHelper = require("node_helper");
 
 var log = () => { /* do nothing */ };
@@ -40,10 +43,7 @@ module.exports = NodeHelper.create({
     this.catchError();
     console.log(`[LINKY] MMM-Linky Version: ${require("./package.json").version} Revison: ${require("./package.json").rev}`);
     if (this.config.debug) log = (...args) => { console.log("[LINKY]", ...args); };
-    log("Config:", this.config);
-    this.Dates = this.calculateDates();
-    if (!Object.keys(this.Dates).length) return;
-    log("Dates:", this.Dates);
+    if (this.config.dev) log("Config:", this.config);
 
     await this.readChartData();
     if (Object.keys(this.chartData).length) {
@@ -93,6 +93,10 @@ module.exports = NodeHelper.create({
 
   // Récupération des données
   async getConsumptionData () {
+    this.Dates = this.calculateDates();
+    if (this.Dates === null) return;
+    log("Dates:", this.Dates);
+
     if (!this.Linky) {
       this.initLinky(() => this.getConsumptionData());
       return;
@@ -113,34 +117,29 @@ module.exports = NodeHelper.create({
           if (!this.consumptionData[year]) this.consumptionData[year] = [];
 
           if (this.config.annee_n_minus_1 === 1) {
-            const current = dayjs();
+            var current = dayjs().set("hour", 0).set("minute", 0).set("second", 0);
             const currentYear = current.year();
             var testDate = current.subtract(1, "day");
-            if (currentYear === year) {
-              // année en cours
-              switch (this.config.periode) {
-                case 1:
-                  testDate = testDate.subtract(1, "day");
-                  break;
-                case 2:
-                  testDate = testDate.subtract(3, "day");
-                  break;
-                case 3:
-                  testDate = testDate.subtract(7, "day");
-                  break;
-                default:
-                  testDate = current;
-                  break;
-              }
-              if (dayjs(testDate).isBefore(dayjs(reading.date))) {
-                this.consumptionData[year].push({ day, month, value });
-              }
-            } else {
-              // année precedente
+            switch (this.config.periode) {
+              case 1:
+                testDate = testDate.subtract(1, "day");
+                break;
+              case 2:
+                testDate = testDate.subtract(3, "day");
+                break;
+              case 3:
+                testDate = testDate.subtract(7, "day");
+                break;
+              default:
+                testDate = current;
+                break;
+            }
+            if (currentYear !== year) {
               testDate = testDate.subtract(1, "year");
-              if (dayjs(reading.date).isBefore(dayjs(testDate))) {
-                this.consumptionData[year].push({ day, month, value });
-              }
+              current = current.subtract(1, "day").subtract(1, "year");
+            }
+            if (dayjs(reading.date).isBetween(testDate, current)) {
+              this.consumptionData[year].push({ day, month, value });
             }
           } else {
             this.consumptionData[year].push({ day, month, value });
