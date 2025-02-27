@@ -8,7 +8,7 @@ Si vous choisissez de récupérer les données de l'année précédente une comp
 
 Le header est également dynamique et changera en fonction de la période sélectionnée !
 
-Les données sont actualisées chaque jour entre 10h et 13h.
+Les données sont actualisées chaque jour entre 14h et 15h.
 
 ## ScreenShots
 
@@ -44,14 +44,18 @@ Pour utiliser ce module, ajoutez-le au tableau modules dans le fichier `config/c
       module: "MMM-Linky",
       position: "top_left",
       config: {
-        debug: false,
+        debug: 0,
         prm: "",
         token: "",
         periode: 1,
         annee_n_minus_1: 1,
         couleur: 3,
         valuebar: 1,
-        valuebartextcolor: 0
+        valuebartextcolor: 0,
+        header: 1,
+        energie: 1,
+        updateDate: 1,
+        updateNext: 1
       },
     },
 ```
@@ -73,14 +77,18 @@ Configuration minimale :
 
 Option|Default|Description
 ---|---|---
-`debug`|false|Active le mode débogage
+`debug`|0|Active le mode débogage. <br>`1` : activer <br> `0` : Désactiver
 `prm`||Votre numéro PDL Linky [VOIR ICI](https://www.enedis.fr/faq/compteur-linky/ou-trouver-le-numero-point-de-livraison-pdl-du-compteur-linky)
 `token`||Votre token personnel  [CONSO API](https://conso.boris.sh/)
 `periode`|1|Choix de la période: <br>`1` = Données de la veille <br>`2` = 3 derniers jours <br>`3` = 7 derniers jours
-`annee_n_minus_1`|1|Récupérer les données de l'année précédente. <br>`1` : activer <br> `0` : désactiver
+`annee_n_minus_1`|1|Récupérer les données de l'année précédente. <br>`1` : Activer <br> `0` : Désactiver
 `couleur`|3| `1` : Bleu et Rose <br>`2` : Jaune et Vert <br>`3` : Blanc et Bleu <br>`4` : Orange et Violet
-`valuebar`|1|Affiche les valeurs à l'intérieur des barres. <br>`1` : afficher <br>`0` : masquer
-`valuebartextcolor`|0|Couleur du texte des valeurs. <br>`0` : texte noir <br>`1` : texte blanc
+`valuebar`|1|Affiche les valeurs à l'intérieur des barres. <br>`1` : Afficher <br>`0` : Masquer
+`valuebartextcolor`|0|Couleur du texte des valeurs. <br>`0` : Texte noir <br>`1` : Texte blanc
+`header`|1|Affiche l'en-tête selon la période selectionné. <br>`1` : Afficher <br>`0` : Masquer
+`energie`|1|Affiche l'indicateur de consomation d'énergie. <br>`1` : Afficher <br>`0` : Masquer
+`updateDate`|1|Affiche la date de récupération des données. <br>`1` : Afficher <br>`0` : Masquer
+`updateNext`|1|Affiche la date du prochain cycle de récupération des données. <br>`1` : Afficher <br>`0` : Masquer
 
 ## Mise à jour
 
