@@ -19,7 +19,7 @@ module.exports = NodeHelper.create({
     this.consumptionData = {};
     this.cronExpression = "0 0 14 * * *";
     this.error = null;
-    this.dataFile = path.resolve(__dirname, "linkyData.json");
+    this.dataPath = path.resolve(__dirname, "data");
     this.timers = {};
   },
 
@@ -29,7 +29,7 @@ module.exports = NodeHelper.create({
         if (!this.ready) {
           this.config = payload;
           this.ready = true;
-          this.chartData = {};
+          this.consumptionData = {};
           this.initialize();
         } else {
           this.initWithCache();
@@ -45,9 +45,9 @@ module.exports = NodeHelper.create({
     if (this.config.debug) log = (...args) => { console.log("[LINKY]", ...args); };
     if (this.config.dev) log("Config:", this.config);
 
-    await this.readChartData();
-    if (Object.keys(this.chartData).length) {
-      this.sendSocketNotification("DATA", this.chartData);
+    await this.readChartData("consumption");
+    if (Object.keys(this.consumptionData).length) {
+      this.sendSocketNotification("DATA", this.consumptionData);
     }
     else {
       this.getConsumptionData();
@@ -59,7 +59,7 @@ module.exports = NodeHelper.create({
   initWithCache () {
     console.log(`[LINKY] [Cache] MMM-Linky Version: ${require("./package.json").version} Revison: ${require("./package.json").rev}`);
     if (this.error) this.sendSocketNotification("ERROR", this.error);
-    if (Object.keys(this.chartData).length) this.sendSocketNotification("DATA", this.chartData);
+    if (Object.keys(this.consumptionData).length) this.sendSocketNotification("DATA", this.consumptionData);
     if (Object.keys(this.timers).length) this.sendTimers();
   },
 
@@ -173,15 +173,15 @@ module.exports = NodeHelper.create({
     }
 
     log("Données des graphiques :", { labels: days, data: datasets });
-    this.chartData = {
+    this.consumptionData = {
       labels: days,
       datasets: datasets,
       energie: this.config.annee_n_minus_1 === 1 ? this.setEnergie() : null,
       update: `Données du ${dayjs().format("DD/MM/YYYY -- HH:mm:ss")}`,
       seed: dayjs().valueOf()
     };
-    this.sendSocketNotification("DATA", this.chartData);
-    this.saveChartData();
+    this.sendSocketNotification("DATA", this.consumptionData);
+    this.saveChartData("consumption");
   },
 
   // Selection schémas de couleurs
@@ -271,55 +271,6 @@ module.exports = NodeHelper.create({
     return total;
   },
 
-  // Exporte les donnée Charts vers linkyData.json
-  saveChartData () {
-    const jsonData = JSON.stringify(this.chartData, null, 2);
-    writeFile(this.dataFile, jsonData, "utf8", (err) => {
-      if (err) {
-        console.error("Erreur lors de l'exportation des données", err);
-      } else {
-        log("Les données ont été exporté vers", this.dataFile);
-      }
-    });
-  },
-
-  // Lecture du fichier linkyData.json
-  readChartData () {
-    return new Promise((resolve) => {
-      // verifie la presence
-      access(this.dataFile, constants.F_OK, (error) => {
-        if (error) {
-          log("Pas de fichier cache trouvé");
-          this.chartData = {};
-          resolve();
-          return;
-        }
-
-        // lit le fichier
-        readFile(this.dataFile, (err, data) => {
-          if (err) {
-            console.error("[LINKY] Erreur de la lecture du fichier cache!", err);
-            this.chartData = {};
-            resolve();
-            return;
-          }
-          const linkyData = JSON.parse(data);
-          const now = dayjs().valueOf();
-          const seed = dayjs(linkyData.seed).format("DD/MM/YYYY -- HH:mm:ss");
-          const next = dayjs(linkyData.seed).add(12, "hour").valueOf();
-          if (now > next) {
-            log("Les dernieres données reçues sont > 12h, utilisation de l'API...");
-            this.chartData = {};
-          } else {
-            log("Utilisation du cache:", seed);
-            this.chartData = linkyData;
-          }
-          resolve();
-        });
-      });
-    });
-  },
-
   // -----------
   // API -------
   // -----------
@@ -352,7 +303,6 @@ module.exports = NodeHelper.create({
           resolve(await this.sendRequest(type, date));
         });
       } else {
-        // !!! todo catch()
         this.Linky[type](date.startDate, date.endDate)
           .then((result) => {
             resolve(result);
@@ -486,6 +436,85 @@ module.exports = NodeHelper.create({
     const timers = Object.values(this.timers);
     timers.forEach((timer) => {
       this.sendSocketNotification("TIMERS", timer);
+    });
+  },
+
+  // -----------
+  // CACHE FILES
+  // -----------
+
+  // Exporte les donnée Charts
+  saveChartData (type) {
+    var file, data;
+    switch (type) {
+      case "consumption":
+        file = `${this.dataPath}/consumption.json`;
+        data = this.consumptionData;
+        break;
+    }
+
+    const jsonData = JSON.stringify(data, null, 2);
+    writeFile(file, jsonData, "utf8", (err) => {
+      if (err) {
+        console.error(`[${type}] Erreur lors de l'exportation des données`, err);
+      } else {
+        log(`[${type}] Les données ont été exporté vers`, file);
+      }
+    });
+  },
+
+  // Lecture des fichiers de données Charts
+  readChartData (type) {
+    var file;
+    switch (type) {
+      case "consumption":
+        file = `${this.dataPath}/consumption.json`;
+        break;
+    }
+    return new Promise((resolve) => {
+      // verifie la presence
+      access(file, constants.F_OK, (error) => {
+        if (error) {
+          log(`[${type}] Pas de fichier cache trouvé`);
+          switch (type) {
+            case "consumption":
+              this.consumptionData = {};
+              break;
+          }
+          resolve();
+          return;
+        }
+
+        // lit le fichier
+        readFile(file, (err, data) => {
+          if (err) {
+            console.error(`[LINKY] [${type}] Erreur de la lecture du fichier cache!`, err);
+            this.consumptionData = {};
+            resolve();
+            return;
+          }
+          const linkyData = JSON.parse(data);
+          const now = dayjs().valueOf();
+          const seed = dayjs(linkyData.seed).format("DD/MM/YYYY -- HH:mm:ss");
+          const next = dayjs(linkyData.seed).add(12, "hour").valueOf();
+          if (now > next) {
+            log(`[${type}] Les dernieres données reçues sont > 12h, utilisation de l'API...`);
+            switch (type) {
+              case "consumption":
+                this.consumptionData = {};
+                break;
+            }
+          } else {
+            log(`[${type}] Utilisation du cache:`, seed);
+            switch (type) {
+              case "consumption":
+                this.consumptionData = linkyData;
+                break;
+            }
+          }
+          resolve();
+        });
+      });
     });
   }
 });
