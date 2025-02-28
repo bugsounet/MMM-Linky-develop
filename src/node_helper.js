@@ -1,6 +1,3 @@
-const { writeFile, readFile, access, constants } = require("node:fs");
-const path = require("node:path");
-
 const dayjs = require("dayjs");
 const isBetween = require("dayjs/plugin/isBetween");
 
@@ -9,6 +6,7 @@ dayjs.extend(isBetween);
 const NodeHelper = require("node_helper");
 const api = require("./components/api");
 const timers = require("./components/timers");
+const files = require("./components/files");
 
 var log = () => { /* do nothing */ };
 
@@ -16,12 +14,11 @@ module.exports = NodeHelper.create({
   start () {
     this.config = null;
     this.api = null;
+    this.task = null;
+    this.files = null;
     this.dates = [];
     this.consumptionData = {};
-    this.cronExpression = "0 0 14 * * *";
     this.error = null;
-    this.dataPath = path.resolve(__dirname, "data");
-    this.task = null;
   },
 
   socketNotificationReceived (notification, payload) {
@@ -53,10 +50,12 @@ module.exports = NodeHelper.create({
       retryTimer: () => this.tasks.retryTimer(),
       getConsumptionData: () => this.getConsumptionData()
     };
+
     this.api = new api(Tools, this.config);
     this.tasks = new timers(Tools, this.config);
+    this.files = new files(Tools, this.config);
 
-    await this.readChartData("consumption");
+    this.consumptionData = await this.files.readChartData("consumption");
     if (Object.keys(this.consumptionData).length) {
       this.sendSocketNotification("DATA", this.consumptionData);
     }
@@ -192,7 +191,7 @@ module.exports = NodeHelper.create({
       seed: dayjs().valueOf()
     };
     this.sendSocketNotification("DATA", this.consumptionData);
-    this.saveChartData("consumption");
+    this.files.saveChartData("consumption", this.consumptionData);
   },
 
   // Selection schémas de couleurs
@@ -328,84 +327,5 @@ module.exports = NodeHelper.create({
     ];
     const random = Math.floor(Math.random() * citations.length);
     return citations[random];
-  },
-
-  // -----------
-  // CACHE FILES
-  // -----------
-
-  // Exporte les donnée Charts
-  saveChartData (type) {
-    var file, data;
-    switch (type) {
-      case "consumption":
-        file = `${this.dataPath}/consumption.json`;
-        data = this.consumptionData;
-        break;
-    }
-
-    const jsonData = JSON.stringify(data, null, 2);
-    writeFile(file, jsonData, "utf8", (err) => {
-      if (err) {
-        console.error(`[${type}] Erreur lors de l'exportation des données`, err);
-      } else {
-        log(`[${type}] Les données ont été exporté vers`, file);
-      }
-    });
-  },
-
-  // Lecture des fichiers de données Charts
-  readChartData (type) {
-    var file;
-    switch (type) {
-      case "consumption":
-        file = `${this.dataPath}/consumption.json`;
-        break;
-    }
-    return new Promise((resolve) => {
-      // verifie la presence
-      access(file, constants.F_OK, (error) => {
-        if (error) {
-          log(`[${type}] Pas de fichier cache trouvé`);
-          switch (type) {
-            case "consumption":
-              this.consumptionData = {};
-              break;
-          }
-          resolve();
-          return;
-        }
-
-        // lit le fichier
-        readFile(file, (err, data) => {
-          if (err) {
-            console.error(`[LINKY] [${type}] Erreur de la lecture du fichier cache!`, err);
-            this.consumptionData = {};
-            resolve();
-            return;
-          }
-          const linkyData = JSON.parse(data);
-          const now = dayjs().valueOf();
-          const seed = dayjs(linkyData.seed).format("DD/MM/YYYY -- HH:mm:ss");
-          const next = dayjs(linkyData.seed).add(12, "hour").valueOf();
-          if (now > next) {
-            log(`[${type}] Les dernieres données reçues sont > 12h, utilisation de l'API...`);
-            switch (type) {
-              case "consumption":
-                this.consumptionData = {};
-                break;
-            }
-          } else {
-            log(`[${type}] Utilisation du cache:`, seed);
-            switch (type) {
-              case "consumption":
-                this.consumptionData = linkyData;
-                break;
-            }
-          }
-          resolve();
-        });
-      });
-    });
   }
 });
