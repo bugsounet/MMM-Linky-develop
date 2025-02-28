@@ -63,20 +63,6 @@ module.exports = NodeHelper.create({
     if (Object.keys(this.timers).length) this.sendTimers();
   },
 
-  // Récupération planifié des données
-  scheduleDataFetch () {
-    const randomMinute = Math.floor(Math.random() * 59);
-    const randomSecond = Math.floor(Math.random() * 59);
-
-    this.cronExpression = `${randomSecond} ${randomMinute} 14 * * *`;
-    cron.schedule(this.cronExpression, () => {
-      log("Exécution de la tâche planifiée de récupération des données.");
-      this.getConsumptionData();
-      this.displayNextCron();
-    });
-    this.displayNextCron();
-  },
-
   // Récupération des données
   async getConsumptionData () {
     this.Dates = this.calculateDates();
@@ -479,6 +465,20 @@ module.exports = NodeHelper.create({
     clearTimeout(this.timer);
     this.timer = null;
     this.sendTimer(null, null, "RETRY");
+  },
+
+  // Récupération planifié des données
+  scheduleDataFetch () {
+    const randomMinute = Math.floor(Math.random() * 59);
+    const randomSecond = Math.floor(Math.random() * 59);
+
+    this.cronExpression = `${randomSecond} ${randomMinute} 14 * * *`;
+    cron.schedule(this.cronExpression, () => {
+      log("Exécution de la tâche planifiée de récupération des données.");
+      this.getConsumptionData();
+      this.displayNextCron();
+    });
+    this.displayNextCron();
   },
 
   // Affiche la prochaine tache Cron
