@@ -40,7 +40,7 @@ module.exports = NodeHelper.create({
 
   // intialisation de MMM-Linky
   async initialize () {
-    this.catchError();
+    this.catchUnhandledRejection();
     console.log(`[LINKY] MMM-Linky Version: ${require("./package.json").version} Revison: ${require("./package.json").rev}`);
     if (this.config.debug) log = (...args) => { console.log("[LINKY]", ...args); };
     if (this.config.dev) log("Config:", this.config);
@@ -53,20 +53,6 @@ module.exports = NodeHelper.create({
       this.getConsumptionData();
     }
     this.scheduleDataFetch();
-  },
-
-  // Initialisation de l'api linky
-  async initLinky (callback) {
-    const { Session } = await this.loadLinky();
-    try {
-      this.Linky = new Session(this.config.token, this.config.prm);
-      log("API linky Prête");
-      if (callback) callback();
-    } catch (error) {
-      console.error(`[LINKY] ${error}`);
-      this.error = error.message;
-      this.sendSocketNotification("ERROR", this.error);
-    }
   },
 
   // Utilisation du cache interne lors d'une utilisation du "mode Server"
@@ -97,14 +83,10 @@ module.exports = NodeHelper.create({
     if (this.Dates === null) return;
     log("Dates:", this.Dates);
 
-    if (!this.Linky) {
-      this.initLinky(() => this.getConsumptionData());
-      return;
-    }
     this.consumptionData = {};
     var error = 0;
 
-    await this.sendConsumptionRequest(this.Dates).then((result) => {
+    await this.sendRequest("getDailyConsumption", this.Dates).then((result) => {
       if (result.start && result.end && result.interval_reading) {
         log("Données reçues de l'API :", result);
 
@@ -227,21 +209,6 @@ module.exports = NodeHelper.create({
     return colorSchemes[this.config.couleur] || colorSchemes[1];
   },
 
-  // Demande des datas selon l'API
-  sendConsumptionRequest (date) {
-    return new Promise((resolve) => {
-      this.Linky.getDailyConsumption(date.startDate, date.endDate).then((result) => {
-        resolve(result);
-      });
-    });
-  },
-
-  // Importation de la librairie linky (dynamic impor)
-  async loadLinky () {
-    const loaded = await import("linky");
-    return loaded;
-  },
-
   // cacul des dates périodique
   calculateDates () {
     const endDate = dayjs().format("YYYY-MM-DD");
@@ -318,34 +285,6 @@ module.exports = NodeHelper.create({
     return total;
   },
 
-  // Retry Timer en cas d'erreur, relance la requete 2 heures apres
-  retryTimer () {
-    if (this.timer) this.clearRetryTimer();
-    this.timer = setTimeout(() => {
-      log("Retry-Timer: Démarrage");
-      this.getConsumptionData();
-    }, 1000 * 60 * 60 * 2);
-    let job = dayjs(dayjs() + this.timer._idleNext.expiry);
-    log("Retry-Timer planifié:", job.format("[Le] DD/MM/YYYY -- HH:mm:ss"));
-    this.sendTimer(job.valueOf(), job.format("[Le] DD/MM/YYYY -- HH:mm:ss"), "RETRY");
-  },
-
-  // Retry Timer kill
-  clearRetryTimer () {
-    if (this.timer) log("Retry-Timer: Arrêt");
-    clearTimeout(this.timer);
-    this.timer = null;
-    this.sendTimer(null, null, "RETRY");
-  },
-
-  // Affiche la prochaine tache Cron
-  displayNextCron () {
-    const next = CronExpressionParser.parse(this.cronExpression, { tz: "Europe/Paris" });
-    let nextCron = dayjs(next.next().toString());
-    log("Prochaine tâche planifiée:", nextCron.format("[Le] DD/MM/YYYY -- HH:mm:ss"));
-    this.sendTimer(nextCron.valueOf(), nextCron.format("[Le] DD/MM/YYYY -- HH:mm:ss"), "CRON");
-  },
-
   // Exporte les donnée Charts vers linkyData.json
   saveChartData () {
     const jsonData = JSON.stringify(this.chartData, null, 2);
@@ -414,7 +353,67 @@ module.exports = NodeHelper.create({
     });
   },
 
-  catchError () {
+  // -----------
+  // API -------
+  // -----------
+
+  // Importation de la librairie linky (dynamic import)
+  async loadLinky () {
+    const loaded = await import("linky");
+    return loaded;
+  },
+
+  // Initialisation de l'api linky
+  async initLinky (callback) {
+    const { Session } = await this.loadLinky();
+    try {
+      this.Linky = new Session(this.config.token, this.config.prm);
+      log("API linky Prête");
+      if (callback) callback();
+    } catch (error) {
+      console.error(`[LINKY] ${error}`);
+      this.error = error.message;
+      this.sendSocketNotification("ERROR", this.error);
+    }
+  },
+
+  // Demande des datas selon l'API
+  sendRequest (type, date) {
+    return new Promise((resolve) => {
+      if (!this.Linky) {
+        this.initLinky(async () => {
+          resolve(await this.sendRequest(type, date));
+        });
+      } else {
+        // !!! todo catch()
+        this.Linky[type](date.startDate, date.endDate)
+          .then((result) => {
+            resolve(result);
+          })
+          .catch((error) => {
+            this.catchError(error);
+          });
+      }
+    });
+  },
+
+  // -----------
+  // ERROR------
+  // -----------
+
+  catchError (error) {
+    if (error.message) {
+      console.error(`[LINKY] [${error.code}] ${error.message}`);
+      this.error = `[${error.code}] ${error.message}`;
+      this.sendSocketNotification("ERROR", this.error);
+    } else {
+      // must never Happen...
+      console.error("[LINKY] !!!", error);
+    }
+    this.retryTimer();
+  },
+
+  catchUnhandledRejection () {
     process.on("unhandledRejection", (error) => {
       // catch conso API error and Enedis only
       if (error.stack.includes("MMM-Linky/node_modules/linky/") && error.response) {
@@ -423,16 +422,6 @@ module.exports = NodeHelper.create({
           console.error(`[LINKY] [${error.response.status}] ${error.response.message}`);
           this.error = error.response.message;
           this.sendSocketNotification("ERROR", this.error);
-        } else {
-          // catch Conso API error
-          if (error.message) {
-            console.error(`[LINKY] [${error.code}] ${error.message}`);
-            this.error = `[${error.code}] ${error.message}`;
-            this.sendSocketNotification("ERROR", this.error);
-          } else {
-            // must never Happen...
-            console.error("[LINKY]", error);
-          }
         }
         this.retryTimer();
       } else {
@@ -466,5 +455,37 @@ module.exports = NodeHelper.create({
     ];
     const random = Math.floor(Math.random() * citations.length);
     return citations[random];
+  },
+
+  // -----------
+  // TIMER------
+  // -----------
+
+  // Retry Timer en cas d'erreur, relance la requete 2 heures apres
+  retryTimer () {
+    if (this.timer) this.clearRetryTimer();
+    this.timer = setTimeout(() => {
+      log("Retry-Timer: Démarrage");
+      this.getConsumptionData();
+    }, 1000 * 60 * 60 * 2);
+    let job = dayjs(dayjs() + this.timer._idleNext.expiry);
+    log("Retry-Timer planifié:", job.format("[Le] DD/MM/YYYY -- HH:mm:ss"));
+    this.sendTimer(job.valueOf(), job.format("[Le] DD/MM/YYYY -- HH:mm:ss"), "RETRY");
+  },
+
+  // Retry Timer kill
+  clearRetryTimer () {
+    if (this.timer) log("Retry-Timer: Arrêt");
+    clearTimeout(this.timer);
+    this.timer = null;
+    this.sendTimer(null, null, "RETRY");
+  },
+
+  // Affiche la prochaine tache Cron
+  displayNextCron () {
+    const next = CronExpressionParser.parse(this.cronExpression, { tz: "Europe/Paris" });
+    let nextCron = dayjs(next.next().toString());
+    log("Prochaine tâche planifiée:", nextCron.format("[Le] DD/MM/YYYY -- HH:mm:ss"));
+    this.sendTimer(nextCron.valueOf(), nextCron.format("[Le] DD/MM/YYYY -- HH:mm:ss"), "CRON");
   }
 });
