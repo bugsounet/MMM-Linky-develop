@@ -7,7 +7,6 @@ class API {
     if (this.config.debug) log = (...args) => { console.log("[LINKY] [API]", ...args); };
     this.sendError = (...args) => Tools.sendError(...args);
     this.retryTimer = () => Tools.retryTimer();
-    log("Classe API Chargée.");
   }
 
   // Importation de la librairie linky (dynamic import)
