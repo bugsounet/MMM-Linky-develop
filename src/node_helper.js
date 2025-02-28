@@ -7,13 +7,14 @@ const isBetween = require("dayjs/plugin/isBetween");
 
 dayjs.extend(isBetween);
 const NodeHelper = require("node_helper");
+const api = require("./components/api");
 
 var log = () => { /* do nothing */ };
 
 module.exports = NodeHelper.create({
   start () {
-    this.Linky = null;
     this.config = null;
+    this.api = null;
     this.dates = [];
     this.timer = null;
     this.consumptionData = {};
@@ -40,10 +41,14 @@ module.exports = NodeHelper.create({
 
   // intialisation de MMM-Linky
   async initialize () {
-    this.catchUnhandledRejection();
     console.log(`[LINKY] MMM-Linky Version: ${require("./package.json").version} Revison: ${require("./package.json").rev}`);
     if (this.config.debug) log = (...args) => { console.log("[LINKY]", ...args); };
-    if (this.config.dev) log("Config:", this.config);
+    this.catchUnhandledRejection();
+    const Tools = {
+      sendSocketNotification: (...args) => this.sendSocketNotification(...args),
+      retryTimer: () => this.retryTimer()
+    };
+    this.api = new api(Tools, this.config);
 
     await this.readChartData("consumption");
     if (Object.keys(this.consumptionData).length) {
@@ -72,7 +77,7 @@ module.exports = NodeHelper.create({
     this.consumptionData = {};
     var error = 0;
 
-    await this.sendRequest("getDailyConsumption", this.Dates).then((result) => {
+    await this.api.request("getDailyConsumption", this.Dates).then((result) => {
       if (result.start && result.end && result.interval_reading) {
         log("Données reçues de l'API :", result);
 
@@ -272,63 +277,8 @@ module.exports = NodeHelper.create({
   },
 
   // -----------
-  // API -------
-  // -----------
-
-  // Importation de la librairie linky (dynamic import)
-  async loadLinky () {
-    const loaded = await import("linky");
-    return loaded;
-  },
-
-  // Initialisation de l'api linky
-  async initLinky (callback) {
-    const { Session } = await this.loadLinky();
-    try {
-      this.Linky = new Session(this.config.token, this.config.prm);
-      log("API linky Prête");
-      if (callback) callback();
-    } catch (error) {
-      console.error(`[LINKY] ${error}`);
-      this.error = error.message;
-      this.sendSocketNotification("ERROR", this.error);
-    }
-  },
-
-  // Demande des datas selon l'API
-  sendRequest (type, date) {
-    return new Promise((resolve) => {
-      if (!this.Linky) {
-        this.initLinky(async () => {
-          resolve(await this.sendRequest(type, date));
-        });
-      } else {
-        this.Linky[type](date.startDate, date.endDate)
-          .then((result) => {
-            resolve(result);
-          })
-          .catch((error) => {
-            this.catchError(error);
-          });
-      }
-    });
-  },
-
-  // -----------
   // ERROR------
   // -----------
-
-  catchError (error) {
-    if (error.message) {
-      console.error(`[LINKY] [${error.code}] ${error.message}`);
-      this.error = `[${error.code}] ${error.message}`;
-      this.sendSocketNotification("ERROR", this.error);
-    } else {
-      // must never Happen...
-      console.error("[LINKY] !!!", error);
-    }
-    this.retryTimer();
-  },
 
   catchUnhandledRejection () {
     process.on("unhandledRejection", (error) => {
