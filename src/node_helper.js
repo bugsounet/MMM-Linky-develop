@@ -1,13 +1,14 @@
 const { writeFile, readFile, access, constants } = require("node:fs");
 const path = require("node:path");
-const cron = require("node-cron");
-const { CronExpressionParser } = require("cron-parser");
+
 const dayjs = require("dayjs");
 const isBetween = require("dayjs/plugin/isBetween");
 
 dayjs.extend(isBetween);
+
 const NodeHelper = require("node_helper");
 const api = require("./components/api");
+const timers = require("./components/timers");
 
 var log = () => { /* do nothing */ };
 
@@ -16,12 +17,11 @@ module.exports = NodeHelper.create({
     this.config = null;
     this.api = null;
     this.dates = [];
-    this.timer = null;
     this.consumptionData = {};
     this.cronExpression = "0 0 14 * * *";
     this.error = null;
     this.dataPath = path.resolve(__dirname, "data");
-    this.timers = {};
+    this.task = null;
   },
 
   socketNotificationReceived (notification, payload) {
@@ -45,10 +45,16 @@ module.exports = NodeHelper.create({
     if (this.config.debug) log = (...args) => { console.log("[LINKY]", ...args); };
     this.catchUnhandledRejection();
     const Tools = {
+      sendError: (...args) => {
+        this.error = args[1];
+        this.sendSocketNotification(...args);
+      },
       sendSocketNotification: (...args) => this.sendSocketNotification(...args),
-      retryTimer: () => this.retryTimer()
+      retryTimer: () => this.tasks.retryTimer(),
+      getConsumptionData: () => this.getConsumptionData()
     };
     this.api = new api(Tools, this.config);
+    this.tasks = new timers(Tools, this.config);
 
     await this.readChartData("consumption");
     if (Object.keys(this.consumptionData).length) {
@@ -57,7 +63,7 @@ module.exports = NodeHelper.create({
     else {
       this.getConsumptionData();
     }
-    this.scheduleDataFetch();
+    this.tasks.scheduleDataFetch();
   },
 
   // Utilisation du cache interne lors d'une utilisation du "mode Server"
@@ -65,7 +71,7 @@ module.exports = NodeHelper.create({
     console.log(`[LINKY] [Cache] MMM-Linky Version: ${require("./package.json").version} Revison: ${require("./package.json").rev}`);
     if (this.error) this.sendSocketNotification("ERROR", this.error);
     if (Object.keys(this.consumptionData).length) this.sendSocketNotification("DATA", this.consumptionData);
-    if (Object.keys(this.timers).length) this.sendTimers();
+    if (Object.keys(this.tasks.timers).length) this.tasks.sendTimers();
   },
 
   // Récupération des données
@@ -134,11 +140,11 @@ module.exports = NodeHelper.create({
     if (!error) {
       log("Données de consommation collecté:", this.consumptionData);
       this.error = null;
-      this.clearRetryTimer();
+      this.tasks.clearRetryTimer();
       this.setChartValue();
     } else {
       log("Il y a des Erreurs API...");
-      this.retryTimer();
+      this.tasks.retryTimer();
     }
   },
 
@@ -290,7 +296,7 @@ module.exports = NodeHelper.create({
           this.error = error.response.message;
           this.sendSocketNotification("ERROR", this.error);
         }
-        this.retryTimer();
+        this.tasks.retryTimer();
       } else {
         // detect any errors of node_helper of MMM-Linky
         if (error.stack.includes("MMM-Linky/node_helper.js")) {
@@ -322,71 +328,6 @@ module.exports = NodeHelper.create({
     ];
     const random = Math.floor(Math.random() * citations.length);
     return citations[random];
-  },
-
-  // -----------
-  // TIMER------
-  // -----------
-
-  // Retry Timer en cas d'erreur, relance la requete 2 heures apres
-  retryTimer () {
-    if (this.timer) this.clearRetryTimer();
-    this.timer = setTimeout(() => {
-      log("Retry-Timer: Démarrage");
-      this.getConsumptionData();
-    }, 1000 * 60 * 60 * 2);
-    let job = dayjs(dayjs() + this.timer._idleNext.expiry);
-    log("Retry-Timer planifié:", job.format("[Le] DD/MM/YYYY -- HH:mm:ss"));
-    this.sendTimer(job.valueOf(), job.format("[Le] DD/MM/YYYY -- HH:mm:ss"), "RETRY");
-  },
-
-  // Retry Timer kill
-  clearRetryTimer () {
-    if (this.timer) log("Retry-Timer: Arrêt");
-    clearTimeout(this.timer);
-    this.timer = null;
-    this.sendTimer(null, null, "RETRY");
-  },
-
-  // Récupération planifié des données
-  scheduleDataFetch () {
-    const randomMinute = Math.floor(Math.random() * 59);
-    const randomSecond = Math.floor(Math.random() * 59);
-
-    this.cronExpression = `${randomSecond} ${randomMinute} 14 * * *`;
-    cron.schedule(this.cronExpression, () => {
-      log("Exécution de la tâche planifiée de récupération des données.");
-      this.getConsumptionData();
-      this.displayNextCron();
-    });
-    this.displayNextCron();
-  },
-
-  // Affiche la prochaine tache Cron
-  displayNextCron () {
-    const next = CronExpressionParser.parse(this.cronExpression, { tz: "Europe/Paris" });
-    let nextCron = dayjs(next.next().toString());
-    log("Prochaine tâche planifiée:", nextCron.format("[Le] DD/MM/YYYY -- HH:mm:ss"));
-    this.sendTimer(nextCron.valueOf(), nextCron.format("[Le] DD/MM/YYYY -- HH:mm:ss"), "CRON");
-  },
-
-  // Envoi l'affichage de la date du prochain update
-  sendTimer (seed, date, type) {
-    let timer = {
-      seed: seed,
-      date: date,
-      type: type
-    };
-    this.timers[type] = timer;
-    this.sendSocketNotification("TIMERS", timer);
-  },
-
-  // envoi l'affichage de tous les timers (server mode)
-  sendTimers () {
-    const timers = Object.values(this.timers);
-    timers.forEach((timer) => {
-      this.sendSocketNotification("TIMERS", timer);
-    });
   },
 
   // -----------
