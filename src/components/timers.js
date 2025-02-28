@@ -12,7 +12,7 @@ class TIMERS {
     this.getConsumptionData = () => Tools.getConsumptionData();
     this.timers = {};
     this.timer = null;
-    log("Classe TIMERS Chargée.");
+    this.cronExpression = "0 0 14 * * *";
   }
 
   // Retry Timer en cas d'erreur, relance la requete 2 heures apres
