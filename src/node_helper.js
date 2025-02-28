@@ -320,25 +320,6 @@ module.exports = NodeHelper.create({
     });
   },
 
-  // Envoi l'affichage de la date du prochain update
-  sendTimer (seed, date, type) {
-    let timer = {
-      seed: seed,
-      date: date,
-      type: type
-    };
-    this.timers[type] = timer;
-    this.sendSocketNotification("TIMERS", timer);
-  },
-
-  // envoi l'affichage de tous les timers (server mode)
-  sendTimers () {
-    const timers = Object.values(this.timers);
-    timers.forEach((timer) => {
-      this.sendSocketNotification("TIMERS", timer);
-    });
-  },
-
   // -----------
   // API -------
   // -----------
@@ -487,5 +468,24 @@ module.exports = NodeHelper.create({
     let nextCron = dayjs(next.next().toString());
     log("Prochaine tâche planifiée:", nextCron.format("[Le] DD/MM/YYYY -- HH:mm:ss"));
     this.sendTimer(nextCron.valueOf(), nextCron.format("[Le] DD/MM/YYYY -- HH:mm:ss"), "CRON");
+  },
+
+  // Envoi l'affichage de la date du prochain update
+  sendTimer (seed, date, type) {
+    let timer = {
+      seed: seed,
+      date: date,
+      type: type
+    };
+    this.timers[type] = timer;
+    this.sendSocketNotification("TIMERS", timer);
+  },
+
+  // envoi l'affichage de tous les timers (server mode)
+  sendTimers () {
+    const timers = Object.values(this.timers);
+    timers.forEach((timer) => {
+      this.sendSocketNotification("TIMERS", timer);
+    });
   }
 });
