@@ -5,7 +5,7 @@ class API {
     this.Linky = null;
     this.config = config;
     if (this.config.debug) log = (...args) => { console.log("[LINKY] [API]", ...args); };
-    this.sendSocketNotification = (...args) => Tools.sendSocketNotification(...args);
+    this.sendError = (...args) => Tools.sendError(...args);
     this.retryTimer = () => Tools.retryTimer();
     log("Classe API Chargée.");
   }
@@ -25,8 +25,7 @@ class API {
       if (callback) callback();
     } catch (error) {
       console.error(`[LINKY] [API] ${error}`);
-      this.error = error.message;
-      this.sendSocketNotification("ERROR", this.error);
+      this.sendError("ERROR", error.message);
     }
   }
 
@@ -52,8 +51,8 @@ class API {
   catchError (error) {
     if (error.message) {
       console.error(`[LINKY] [API] [Erreur ${error.code}] ${error.message}`);
-      this.error = `[Erreur ${error.code}] ${error.message}`;
-      this.sendSocketNotification("ERROR", this.error);
+      let msgError = `[Erreur ${error.code}] ${error.message}`;
+      this.sendError("ERROR", msgError);
     } else {
       // must never Happen...
       console.error("[LINKY] [API] !TO DEBUG!", error);
