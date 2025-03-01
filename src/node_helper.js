@@ -246,7 +246,6 @@ module.exports = NodeHelper.create({
   calculateDates () {
     const endDate = dayjs().format("YYYY-MM-DD");
     var start = dayjs();
-    if (this.config.annee_n_minus_1 === 1) start = start.subtract(1, "year");
 
     switch (this.config.periode) {
       case 1:
@@ -264,6 +263,7 @@ module.exports = NodeHelper.create({
         return null;
     }
 
+    if (this.config.annee_n_minus_1 === 1) start = start.subtract(1, "year");
     const startDate = dayjs(start).format("YYYY-MM-DD");
 
     return { startDate, endDate };
