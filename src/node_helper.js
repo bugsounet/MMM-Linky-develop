@@ -7,6 +7,7 @@ const NodeHelper = require("node_helper");
 const api = require("./components/api");
 const timers = require("./components/timers");
 const files = require("./components/files");
+const chart = require("./components/chart");
 
 var log = () => { /* do nothing */ };
 
@@ -54,13 +55,14 @@ module.exports = NodeHelper.create({
     this.api = new api(Tools, this.config);
     this.tasks = new timers(Tools, this.config);
     this.files = new files(Tools, this.config);
+    this.chart = new chart(Tools, this.config);
 
-    this.consumptionData = await this.files.readChartData("consumption");
+    this.consumptionData = await this.files.readChartData("getDailyConsumption");
     if (Object.keys(this.consumptionData).length) {
       this.sendSocketNotification("DATA", this.consumptionData);
     }
     else {
-      this.getConsumptionData();
+      this.getConsumptionData("getDailyConsumption");
     }
     this.tasks.scheduleDataFetch();
   },
@@ -74,25 +76,23 @@ module.exports = NodeHelper.create({
   },
 
   // Récupération des données
-  async getConsumptionData () {
-    this.Dates = this.calculateDates();
+  async getConsumptionData (type) {
+    this.Dates = this.chart.calculateDates();
     if (this.Dates === null) return;
-    log("Dates:", this.Dates);
+    log("Dates demandé:", this.Dates);
 
-    this.consumptionData = {};
+    var data = {};
     var error = 0;
 
-    await this.api.request("getDailyConsumption", this.Dates).then((result) => {
+    await this.api.request(type, this.Dates).then((result) => {
       if (result.start && result.end && result.interval_reading) {
         log("Données reçues de l'API :", result);
 
         result.interval_reading.forEach((reading) => {
           const year = dayjs(reading.date).get("year");
-          const day = dayjs(reading.date).get("date");
-          const month = dayjs(reading.date).get("month") + 1;
           const value = parseFloat(reading.value);
 
-          if (!this.consumptionData[year]) this.consumptionData[year] = [];
+          if (!data[year]) data[year] = [];
 
           if (this.config.annee_n_minus_1 === 1) {
             var current = dayjs().set("hour", 0).set("minute", 0).set("second", 0);
@@ -117,168 +117,36 @@ module.exports = NodeHelper.create({
               current = current.subtract(1, "day").subtract(1, "year");
             }
             if (dayjs(reading.date).isBetween(testDate, current)) {
-              this.consumptionData[year].push({ day, month, value });
+              data[year].push({ date: reading.date, value });
             }
           } else {
-            this.consumptionData[year].push({ day, month, value });
+            data[year].push({ date: reading.date, value });
           }
         });
       } else {
         error = 1;
-        console.error("[LINKY] Format inattendu des données :", result);
+        console.error(`[LINKY] [${type}] Format inattendu des données:`, result);
         if (result.error) {
-          this.error = result.error.error;
+          this.error = `[${type}] ${result.error.error}`;
           this.sendSocketNotification("ERROR", this.error);
         } else {
-          this.error = "Erreur lors de la collecte de données.";
+          this.error = `[${type}] Erreur lors de la collecte de données.`;
           this.sendSocketNotification("ERROR", this.error);
         }
       }
     });
 
     if (!error) {
-      log("Données de consommation collecté:", this.consumptionData);
+      log(`[${type}] Données de consommation collecté:`, data);
       this.error = null;
       this.tasks.clearRetryTimer();
-      this.setChartValue();
+      this.consumptionData = this.chart.setChartValue(data);
+      this.sendSocketNotification("DATA", this.consumptionData);
+      this.files.saveChartData(type, this.consumptionData);
     } else {
-      log("Il y a des Erreurs API...");
+      log(`[${type}] Il y a des Erreurs API...`);
       this.tasks.retryTimer();
     }
-  },
-
-  // création des données chartjs
-  setChartValue () {
-    const days = [];
-    const datasets = [];
-    const colors = this.getChartColors();
-
-    let index = 0;
-    for (const year in this.consumptionData) {
-      const data = this.consumptionData[year].sort((a, b) => {
-        if (a.month === b.month) {
-          return a.day - b.day;
-        }
-        return a.month - b.month;
-      });
-
-      const values = data.map((item) => item.value);
-
-      if (index === 0) {
-        days.push(
-          ...data.map(
-            (item) => `${item.day} ${["Error", "janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."][item.month]}`
-          )
-        );
-      }
-
-      datasets.push({
-        label: year,
-        data: values,
-        backgroundColor: colors[index],
-        borderColor: colors[index].replace("0.8", "1"),
-        borderWidth: 1
-      });
-      index++;
-    }
-
-    log("Données des graphiques :", { labels: days, data: datasets });
-    this.consumptionData = {
-      labels: days,
-      datasets: datasets,
-      energie: this.config.annee_n_minus_1 === 1 ? this.setEnergie() : null,
-      update: `Données du ${dayjs().format("DD/MM/YYYY -- HH:mm:ss")}`,
-      seed: dayjs().valueOf()
-    };
-    this.sendSocketNotification("DATA", this.consumptionData);
-    this.files.saveChartData("consumption", this.consumptionData);
-  },
-
-  // Selection schémas de couleurs
-  getChartColors () {
-    const colorSchemes = {
-      1: ["rgba(245, 234, 39, 0.8)", "rgba(245, 39, 230, 0.8)"],
-      2: ["rgba(252, 255, 0, 0.8)", "rgba(13, 255, 0, 0.8)"],
-      3: ["rgba(255, 255, 255, 0.8)", "rgba(0, 255, 242, 0.8)"],
-      4: ["rgba(255, 125, 0, 0.8)", "rgba(220, 0, 255, 0.8)"]
-    };
-    return colorSchemes[this.config.couleur] || colorSchemes[1];
-  },
-
-  // cacul des dates périodique
-  calculateDates () {
-    const endDate = dayjs().format("YYYY-MM-DD");
-    var start = dayjs();
-    if (this.config.annee_n_minus_1 === 1) start = start.subtract(1, "year");
-
-    switch (this.config.periode) {
-      case 1:
-        start = start.subtract(1, "day");
-        break;
-      case 2:
-        start = start.subtract(3, "day");
-        break;
-      case 3:
-        start = start.subtract(7, "day");
-        break;
-      default:
-        console.error("[LINKY] periode invalide.");
-        this.sendSocketNotification("ERROR", "periode invalide.");
-        return null;
-    }
-
-    const startDate = dayjs(start).format("YYYY-MM-DD");
-
-    return { startDate, endDate };
-  },
-
-  // Création du message Energie
-  setEnergie () {
-    const currentYearTotal = this.calculateTotalConsumption(dayjs().get("year"));
-    const previousYearTotal = this.calculateTotalConsumption(dayjs().subtract(1, "year").get("year"));
-
-    var message, color, periodText;
-
-    switch (this.config.periode) {
-      case 1:
-        periodText = "le dernier jour";
-        break;
-      case 2:
-        periodText = "les 3 derniers jours";
-        break;
-      case 3:
-        periodText = "les 7 derniers jours";
-        break;
-      default:
-        periodText = "période inconnue";
-    }
-
-    if (currentYearTotal < previousYearTotal) {
-      message = `Félicitations, votre consommation d'énergie a baissé sur ${periodText} par rapport à l'année dernière !`;
-      color = "green";
-    } else if (currentYearTotal > previousYearTotal) {
-      message = `Attention, votre consommation d'énergie a augmenté sur ${periodText} par rapport à l'année dernière !`;
-      color = "red";
-    } else {
-      message = `Votre consommation d'énergie est stable sur ${periodText} par rapport à l'année dernière.`;
-      color = "yellow";
-    }
-
-    return {
-      message: message,
-      color: color
-    };
-  },
-
-  // Calcul de la comsommation totale
-  calculateTotalConsumption (year) {
-    let total = 0;
-    if (this.consumptionData[year]) {
-      this.consumptionData[year].forEach((data) => {
-        total += data.value;
-      });
-    }
-    return total;
   },
 
   // -----------
@@ -300,10 +168,11 @@ module.exports = NodeHelper.create({
         // detect any errors of node_helper of MMM-Linky
         if (error.stack.includes("MMM-Linky/node_helper.js")) {
           console.error(`[LINKY] ${this._citation()}`);
-          console.error("[LINKY] Merci de signaler cette erreur aux développeurs");
           console.error("[LINKY] ---------");
           console.error("[LINKY] node_helper Error:", error);
           console.error("[LINKY] ---------");
+          console.error("[LINKY] Merci de signaler cette erreur aux développeurs");
+          this.sendSocketNotification("ERROR", `[Core Crash] ${error}`);
         } else {
           // from other modules (must never happen... but...)
           console.error("-Other-", error);

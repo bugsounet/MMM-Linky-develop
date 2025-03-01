@@ -7,6 +7,8 @@ class API {
     if (this.config.debug) log = (...args) => { console.log("[LINKY] [API]", ...args); };
     this.sendError = (...args) => Tools.sendError(...args);
     this.retryTimer = () => Tools.retryTimer();
+    this.api = ["getDailyConsumption", "getLoadCurve", "getMaxPower", "getDailyProduction", "getProductionLoadCurve"];
+
   }
 
   // Importation de la librairie linky (dynamic import)
@@ -30,6 +32,10 @@ class API {
 
   // Demande des datas selon l'API
   request (type, date) {
+    if (this.api.indexOf(type) === -1) {
+      this.sendError("ERROR", "[API] Erreur de fonction lors de la requête");
+      return;
+    }
     return new Promise((resolve) => {
       if (!this.Linky) {
         this.initLinky(async () => {

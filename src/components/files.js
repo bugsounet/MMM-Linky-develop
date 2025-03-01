@@ -14,17 +14,22 @@ class FILES {
 
   // Exporte les donnée Charts
   saveChartData (type, data) {
-    var file;
-    switch (type) {
-      case "consumption":
-        file = `${this.dataPath}/consumption.json`;
-        break;
+    if (!type) {
+      console.error("[LINKY] [FILES] Type de Données inconnue");
+      return;
+    }
+
+    const file = `${this.dataPath}/${type}.json`;
+
+    if (!data) {
+      console.error(`[LINKY] [FILES] Aucune données à sauvegarder pour ${type}`);
+      return;
     }
 
     const jsonData = JSON.stringify(data, null, 2);
     writeFile(file, jsonData, "utf8", (err) => {
       if (err) {
-        console.error(`[${type}] Erreur lors de l'exportation des données`, err);
+        console.error(`[LINKY] [FILES] [${type}] Erreur lors de l'exportation des données`, err);
       } else {
         log(`[${type}] Les données ont été exporté vers`, file);
       }
@@ -33,12 +38,13 @@ class FILES {
 
   // Lecture des fichiers de données Charts
   readChartData (type) {
-    var file;
-    switch (type) {
-      case "consumption":
-        file = `${this.dataPath}/consumption.json`;
-        break;
+    if (!type) {
+      console.error("[LINKY] [FILES] Type de Données inconnue");
+      return;
     }
+
+    const file = `${this.dataPath}/${type}.json`;
+
     return new Promise((resolve) => {
       // verifie la presence
       access(file, constants.F_OK, (error) => {
@@ -51,7 +57,7 @@ class FILES {
         // lit le fichier
         readFile(file, (err, data) => {
           if (err) {
-            console.error(`[LINKY] [${type}] Erreur de la lecture du fichier cache!`, err);
+            console.error(`[LINKY] [FILES] [${type}] Erreur de la lecture du fichier cache!`, err);
             resolve({});
             return;
           }
