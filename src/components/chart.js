@@ -69,9 +69,6 @@ class CHART {
   calculateDates () {
     const endDate = dayjs().format("YYYY-MM-DD");
     var start = dayjs();
-    if (this.config.annee_n_minus_1 === 1) {
-      start = start.subtract(1, "day").subtract(1, "year");
-    }
 
     switch (this.config.periode) {
       case 1:
@@ -84,9 +81,13 @@ class CHART {
         start = start.subtract(7, "day");
         break;
       default:
-        console.error("[LINKY] periode invalide.");
-        this.sendSocketNotification("ERROR", "periode invalide.");
+        console.error("[LINKY] [CHART] période invalide.");
+        this.sendSocketNotification("ERROR", "période invalide.");
         return null;
+    }
+
+    if (this.config.annee_n_minus_1 === 1) {
+      start = start.subtract(1, "year");
     }
 
     const startDate = dayjs(start).format("YYYY-MM-DD");
