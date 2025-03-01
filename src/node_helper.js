@@ -1,13 +1,9 @@
-const dayjs = require("dayjs");
-const isBetween = require("dayjs/plugin/isBetween");
-
-dayjs.extend(isBetween);
-
 const NodeHelper = require("node_helper");
 const api = require("./components/api");
 const timers = require("./components/timers");
 const files = require("./components/files");
 const chart = require("./components/chart");
+const parser = require("./components/parser");
 
 var log = () => { /* do nothing */ };
 
@@ -56,6 +52,7 @@ module.exports = NodeHelper.create({
     this.tasks = new timers(Tools, this.config);
     this.files = new files(Tools, this.config);
     this.chart = new chart(Tools, this.config);
+    this.parser = new parser(Tools, this.config);
 
     this.consumptionData = await this.files.readChartData("getDailyConsumption");
     if (Object.keys(this.consumptionData).length) {
@@ -86,43 +83,8 @@ module.exports = NodeHelper.create({
 
     await this.api.request(type, this.Dates).then((result) => {
       if (result.start && result.end && result.interval_reading) {
-        log("Données reçues de l'API :", result);
-
-        result.interval_reading.forEach((reading) => {
-          const year = dayjs(reading.date).get("year");
-          const value = parseFloat(reading.value);
-
-          if (!data[year]) data[year] = [];
-
-          if (this.config.annee_n_minus_1 === 1) {
-            var current = dayjs().set("hour", 0).set("minute", 0).set("second", 0);
-            const currentYear = current.year();
-            var testDate = current.subtract(1, "day");
-            switch (this.config.periode) {
-              case 1:
-                testDate = testDate.subtract(1, "day");
-                break;
-              case 2:
-                testDate = testDate.subtract(3, "day");
-                break;
-              case 3:
-                testDate = testDate.subtract(7, "day");
-                break;
-              default:
-                testDate = current;
-                break;
-            }
-            if (currentYear !== year) {
-              testDate = testDate.subtract(1, "year");
-              current = current.subtract(1, "day").subtract(1, "year");
-            }
-            if (dayjs(reading.date).isBetween(testDate, current)) {
-              data[year].push({ date: reading.date, value });
-            }
-          } else {
-            data[year].push({ date: reading.date, value });
-          }
-        });
+        log(`[${type}] Données reçues de l'API:`, result);
+        data = this.parser.parseData(result);
       } else {
         error = 1;
         console.error(`[LINKY] [${type}] Format inattendu des données:`, result);
