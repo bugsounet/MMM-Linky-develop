@@ -4,17 +4,14 @@ const timers = require("./components/timers");
 const files = require("./components/files");
 const chart = require("./components/chart");
 const parser = require("./components/parser");
+const rejection = require("./components/rejection");
 
 var log = () => { /* do nothing */ };
 
 module.exports = NodeHelper.create({
   start () {
     this.config = null;
-    this.api = null;
-    this.task = null;
-    this.files = null;
     this.dates = [];
-    this.consumptionData = {};
     this.error = null;
   },
 
@@ -37,7 +34,6 @@ module.exports = NodeHelper.create({
   async initialize () {
     console.log(`[LINKY] MMM-Linky Version: ${require("./package.json").version} Revison: ${require("./package.json").rev}`);
     if (this.config.debug) log = (...args) => { console.log("[LINKY]", ...args); };
-    this.catchUnhandledRejection();
     const Tools = {
       sendError: (...args) => {
         this.error = args[1];
@@ -48,6 +44,8 @@ module.exports = NodeHelper.create({
       getConsumptionData: () => this.getConsumptionData()
     };
 
+    this.rejection = new rejection(Tools, this.config);
+    this.rejection.catchUnhandledRejection();
     this.api = new api(Tools, this.config);
     this.tasks = new timers(Tools, this.config);
     this.files = new files(Tools, this.config);
@@ -109,54 +107,5 @@ module.exports = NodeHelper.create({
       log(`[${type}] Il y a des Erreurs API...`);
       this.tasks.retryTimer();
     }
-  },
-
-  // -----------
-  // ERROR------
-  // -----------
-
-  catchUnhandledRejection () {
-    process.on("unhandledRejection", (error) => {
-      // catch conso API error and Enedis only
-      if (error.stack.includes("MMM-Linky/node_modules/linky/") && error.response) {
-        // catch Enedis error
-        if (error.response.status && error.response.message && error.response.error) {
-          console.error(`[LINKY] [${error.response.status}] ${error.response.message}`);
-          this.error = error.response.message;
-          this.sendSocketNotification("ERROR", this.error);
-        }
-        this.tasks.retryTimer();
-      } else {
-        // detect any errors of node_helper of MMM-Linky
-        if (error.stack.includes("MMM-Linky/node_helper.js")) {
-          console.error(`[LINKY] ${this._citation()}`);
-          console.error("[LINKY] ---------");
-          console.error("[LINKY] node_helper Error:", error);
-          console.error("[LINKY] ---------");
-          console.error("[LINKY] Merci de signaler cette erreur aux développeurs");
-          this.sendSocketNotification("ERROR", `[Core Crash] ${error}`);
-        } else {
-          // from other modules (must never happen... but...)
-          console.error("-Other-", error);
-        }
-      }
-    });
-  },
-
-  _citation () {
-    let citations = [
-      "J'ai glissé, chef !",
-      "Mirabelle appelle Églantine...",
-      "Mais tremblez pas comme ça, ça fait de la mousse !!!",
-      "C'est dur d'être chef, Chef ?",
-      "Un lapin, chef !",
-      "Fou afez trop chaud ou fou afez trop froid ? ",
-      "Restez groupire!",
-      "On fait pas faire des mouvements respiratoires à un type qu'a les bras cassés !!!",
-      "Si j’connaissais l’con qui a fait sauter l’pont...",
-      "Le fil rouge sur le bouton rouge, le fil bleu sur le bouton bleu."
-    ];
-    const random = Math.floor(Math.random() * citations.length);
-    return citations[random];
   }
 });
