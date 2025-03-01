@@ -37,13 +37,20 @@ class CHART {
     }
 
     log("Données des graphiques :", { labels: days, data: datasets });
+
+    if (datasets.length > 1 && datasets[0].data.length !== datasets[1].data.length) {
+      console.warn("[LINKY] [CHART] Il manque des données pour une des 2 années.");
+      console.warn("[LINKY] [CHART] L'affichage risque d'être corrompu.");
+    }
+
     this.chart = {
       labels: days,
       datasets: datasets,
-      energie: this.config.annee_n_minus_1 === 1 ? this.setEnergie() : null,
+      energie: this.config.annee_n_minus_1 === 1 ? this.setEnergie(detail) : null,
       update: `Données du ${dayjs().format("DD/MM/YYYY -- HH:mm:ss")}`,
       seed: dayjs().valueOf()
     };
+
     return this.chart;
   }
 
@@ -62,7 +69,9 @@ class CHART {
   calculateDates () {
     const endDate = dayjs().format("YYYY-MM-DD");
     var start = dayjs();
-    if (this.config.annee_n_minus_1 === 1) start = start.subtract(1, "year");
+    if (this.config.annee_n_minus_1 === 1) {
+      start = start.subtract(1, "day").subtract(1, "year");
+    }
 
     switch (this.config.periode) {
       case 1:
@@ -86,9 +95,9 @@ class CHART {
   }
 
   // Création du message Energie
-  setEnergie () {
-    const currentYearTotal = this.calculateTotalConsumption(dayjs().get("year"));
-    const previousYearTotal = this.calculateTotalConsumption(dayjs().subtract(1, "year").get("year"));
+  setEnergie (data) {
+    const currentYearTotal = this.calculateTotalConsumption(dayjs().get("year"), data);
+    const previousYearTotal = this.calculateTotalConsumption(dayjs().subtract(1, "year").get("year"), data);
 
     var message, color, periodText;
 
@@ -124,10 +133,10 @@ class CHART {
   }
 
   // Calcul de la comsommation totale
-  calculateTotalConsumption (year) {
+  calculateTotalConsumption (year, datas) {
     let total = 0;
-    if (this.consumptionData[year]) {
-      this.consumptionData[year].forEach((data) => {
+    if (datas[year]) {
+      datas[year].forEach((data) => {
         total += data.value;
       });
     }
