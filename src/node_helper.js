@@ -38,7 +38,12 @@ module.exports = NodeHelper.create({
       retryTimer: () => this.tasks.retryTimer(),
       clearRetryTimer: () => this.tasks.clearRetryTimer(),
       saveChartData: (...args) => this.files.saveChartData(...args),
-      getConsumptionData: () => this.fecher.getData("getDailyConsumption")
+      getConsumptionData: async () => {
+        this.consumptionData = await this.fecher.getData("getDailyConsumption");
+        if (Object.keys(this.consumptionData).length) {
+          this.sendSocketNotification("DATA", this.consumptionData);
+        }
+      }
     };
 
     this.rejection = new rejection(Tools, this.config);
