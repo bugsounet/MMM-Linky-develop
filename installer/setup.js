@@ -40,10 +40,11 @@ async function checkOS () {
       process.exit(1);
       break;
     case "Windows":
-      utils.error(`OS Detected: Windows (${sysinfo.name} ${sysinfo.version} ${sysinfo.arch})`);
-      utils.error("This OS is not supported");
-      utils.empty();
-      process.exit(1);
+      utils.success(`OS Detected: Windows (${sysinfo.name} ${sysinfo.version} ${sysinfo.arch})`);
+      await functions.installNPMDeps();
+      await functions.postInstall();
+      await functions.installFiles();
+      functions.done();
       break;
   }
 }
