@@ -54,23 +54,20 @@ class PARSER {
 
         if (dayjs(reading.date).isBetween(testDate, current)) {
           // LeapYear testing
-          if (currentIsLeapYear && dayjs(reading.date).month() === 1 && dayjs(reading.date).date() === 29) {
-            LeapYear = true;
-            log(`Année bissextile pour ${year}:`, { date: `${year - 1}-02-29`, value: 0 });
-            if (!data[year - 1]) data[year - 1] = [];
-            data[year - 1].push({ date: `${year - 1}-02-29`, value: 0 });
-            added++;
-          }
           if (testDateIsLeapYear && dayjs(reading.date).month() === 1 && dayjs(reading.date).date() === 29) {
-            LeapYear = true;
-            log(`Année bissextile: ${year}:`, { date: `${year + 1}-02-29`, value: 0 });
-            if (!data[year + 1]) data[year + 1] = [];
-            data[year + 1].push({ date: `${year + 1}-02-29`, value: 0 });
+            log(`Année bissextile: ${year} -> ignore 29/02`);
+          } else {
+            if (currentIsLeapYear && dayjs(reading.date).month() === 1 && dayjs(reading.date).date() === 29) {
+              LeapYear = true;
+              log(`Année bissextile pour ${year}:`, { date: `${year - 1}-02-29`, value: 0 });
+              if (!data[year - 1]) data[year - 1] = [];
+              data[year - 1].push({ date: `${year - 1}-02-29`, value: 0 });
+              added++;
+            }
+            log(`Ajoute pour ${year}:`, { date: reading.date, value });
+            data[year].push({ date: reading.date, value });
             added++;
           }
-          log(`Ajoute pour ${year}:`, { date: reading.date, value });
-          data[year].push({ date: reading.date, value });
-          added++;
         }
       } else {
         log(`Ajoute pour ${year}:`, { date: reading.date, value });
@@ -79,6 +76,7 @@ class PARSER {
       }
     });
     if (LeapYear) {
+      // a voir a la prochaine Année bissextile...
       for (const year in data) {
         log(`Classements des dates pour ${year}...`);
         data[year].sort((a, b) => {
