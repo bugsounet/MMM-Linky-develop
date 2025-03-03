@@ -7,12 +7,14 @@ class CHART {
   constructor (Tools, config) {
     this.config = config;
     if (this.config.debug) log = (...args) => { console.log("[LINKY] [CHART]", ...args); };
-    this.sendSocketNotification = (...args) => Tools.sendSocketNotification(...args);
-    this.chart = {};
+    this.sendError = (error) => Tools.sendError(error);
+    this.simpleDay = ["getLoadCurve", "getProductionLoadCurve"];
   }
 
   // création des données chartjs
-  setChartValue (detail) {
+  setChartValue (type, detail) {
+    const isSimpleDay = this.simpleDay.includes(type);
+    const day = dayjs().subtract(1, "day").locale("fr").format("DD MMM YYYY");
     const days = [];
     const datasets = [];
     const colors = this.getChartColors();
@@ -23,15 +25,20 @@ class CHART {
       const values = data.map((item) => item.value);
 
       if (index === 0) {
-        days.push(...data.map((item) => dayjs(item.date).locale("fr").format("DD MMM")));
+        if (isSimpleDay) {
+          days.push(...data.map((item) => dayjs(item.date).locale("fr").format("HH:mm")));
+        } else {
+          days.push(...data.map((item) => dayjs(item.date).locale("fr").format("DD MMM")));
+        }
       }
 
       datasets.push({
-        label: year,
+        label: isSimpleDay ? day : year,
         data: values,
         backgroundColor: colors[index],
         borderColor: colors[index].replace("0.8", "1"),
-        borderWidth: 1
+        borderWidth: 1,
+        tension: 0.4
       });
       index++;
     }
@@ -43,21 +50,19 @@ class CHART {
       console.warn("[LINKY] [CHART] L'affichage risque d'être corrompu.");
     }
 
-    this.chart = {
+    return {
       labels: days,
       datasets: datasets,
-      energie: this.config.annee_n_minus_1 === 1 ? this.setEnergie(detail) : null,
+      energie: !isSimpleDay && this.config.energie === 1 && this.config.annee_n_minus_1 === 1 ? this.setEnergie(type, detail) : null,
       update: `Données du ${dayjs().format("DD/MM/YYYY -- HH:mm:ss")}`,
       seed: dayjs().valueOf()
     };
-
-    return this.chart;
   }
 
   // Selection schémas de couleurs
   getChartColors () {
     const colorSchemes = {
-      1: ["rgba(245, 234, 39, 0.8)", "rgba(245, 39, 230, 0.8)"],
+      1: ["rgba(0, 128, 255, 0.8)", "rgba(245, 39, 230, 0.8)"],
       2: ["rgba(252, 255, 0, 0.8)", "rgba(13, 255, 0, 0.8)"],
       3: ["rgba(255, 255, 255, 0.8)", "rgba(0, 255, 242, 0.8)"],
       4: ["rgba(255, 125, 0, 0.8)", "rgba(220, 0, 255, 0.8)"]
@@ -66,9 +71,15 @@ class CHART {
   }
 
   // cacul des dates périodique
-  calculateDates () {
+  calculateDates (type) {
+    const isSimpleDay = this.simpleDay.includes(type);
     const endDate = dayjs().format("YYYY-MM-DD");
     var start = dayjs();
+
+    if (isSimpleDay) {
+      start = dayjs(start.subtract(1, "day")).format("YYYY-MM-DD");
+      return { startDate: start, endDate };
+    }
 
     switch (this.config.periode) {
       case 1:
@@ -81,8 +92,8 @@ class CHART {
         start = start.subtract(7, "day");
         break;
       default:
-        console.error("[LINKY] [CHART] période invalide.");
-        this.sendSocketNotification("ERROR", "période invalide.");
+        console.error(`[LINKY] [CHART] [${type}] Période invalide.`);
+        this.sendError("Période invalide.");
         return null;
     }
 
@@ -96,9 +107,10 @@ class CHART {
   }
 
   // Création du message Energie
-  setEnergie (data) {
+  setEnergie (type, data) {
     const currentYearTotal = this.calculateTotalConsumption(dayjs().get("year"), data);
     const previousYearTotal = this.calculateTotalConsumption(dayjs().subtract(1, "year").get("year"), data);
+    const ProductionOrConsomation = type.includes("Production") ? "production" : "consomation";
 
     var message, color, periodText;
 
@@ -117,13 +129,13 @@ class CHART {
     }
 
     if (currentYearTotal < previousYearTotal) {
-      message = `Félicitations, votre consommation d'énergie a baissé sur ${periodText} par rapport à l'année dernière !`;
+      message = `Félicitations, votre ${ProductionOrConsomation} d'énergie a baissé sur ${periodText} par rapport à l'année dernière !`;
       color = "green";
     } else if (currentYearTotal > previousYearTotal) {
-      message = `Attention, votre consommation d'énergie a augmenté sur ${periodText} par rapport à l'année dernière !`;
+      message = `Attention, votre ${ProductionOrConsomation} d'énergie a augmenté sur ${periodText} par rapport à l'année dernière !`;
       color = "red";
     } else {
-      message = `Votre consommation d'énergie est stable sur ${periodText} par rapport à l'année dernière.`;
+      message = `Votre ${ProductionOrConsomation} d'énergie est stable sur ${periodText} par rapport à l'année dernière.`;
       color = "yellow";
     }
 

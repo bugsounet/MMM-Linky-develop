@@ -4,7 +4,7 @@ class REJECTION {
   constructor (Tools, config) {
     this.config = config;
     if (this.config.debug) log = (...args) => { console.log("[LINKY] [REJECTION]", ...args); };
-    this.sendError = (...args) => Tools.sendError(...args);
+    this.sendError = (error) => Tools.sendError(error);
     this.retryTimer = () => Tools.retryTimer();
   }
 
@@ -28,7 +28,7 @@ class REJECTION {
           console.error("[LINKY] [REJECTION] node_helper Error:", error);
           console.error("[LINKY] [REJECTION] ---------");
           console.error("[LINKY] [REJECTION] Merci de signaler cette erreur aux développeurs");
-          this.sendError("ERROR", `[Core Crash] ${error}`);
+          this.sendError(`[Core Crash] ${error}`);
         } else {
           // from other modules (must never happen... but...)
           console.error("-Other-", error);

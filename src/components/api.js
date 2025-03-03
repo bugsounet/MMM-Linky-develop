@@ -5,7 +5,7 @@ class API {
     this.Linky = null;
     this.config = config;
     if (this.config.debug) log = (...args) => { console.log("[LINKY] [API]", ...args); };
-    this.sendError = (...args) => Tools.sendError(...args);
+    this.sendError = (error) => Tools.sendError(error);
     this.retryTimer = () => Tools.retryTimer();
     this.api = ["getDailyConsumption", "getLoadCurve", "getMaxPower", "getDailyProduction", "getProductionLoadCurve"];
 
@@ -26,14 +26,14 @@ class API {
       if (callback) callback();
     } catch (error) {
       console.error(`[LINKY] [API] ${error}`);
-      this.sendError("ERROR", error.message);
+      this.sendError(error.message);
     }
   }
 
   // Demande des datas selon l'API
   request (type, date) {
     if (this.api.indexOf(type) === -1) {
-      this.sendError("ERROR", "[API] Erreur de fonction lors de la requête");
+      this.sendError(`[API] API non reconnu: ${type}`);
       return;
     }
     return new Promise((resolve) => {
@@ -48,6 +48,7 @@ class API {
           })
           .catch((error) => {
             this.catchError(error);
+            resolve({ error: true });
           });
       }
     });
@@ -57,12 +58,12 @@ class API {
     if (error.message) {
       console.error(`[LINKY] [API] [Erreur ${error.code}] ${error.message}`);
       let msgError = `[Erreur ${error.code}] ${error.message}`;
-      this.sendError("ERROR", msgError);
+      this.sendError(msgError);
     } else {
       // must never Happen...
       console.error("[LINKY] [API] !TO DEBUG!", error);
     }
-    this.retryTimer();
+    //this.retryTimer();
   }
 }
 module.exports = API;

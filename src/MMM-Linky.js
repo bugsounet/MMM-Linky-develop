@@ -7,6 +7,9 @@ Module.register("MMM-Linky", {
     debug: 0,
     token: "",
     prm: "",
+    //apis: ["getDailyConsumption", "getLoadCurve", "getMaxPower", "getDailyProduction", "getProductionLoadCurve"];
+    apis: ["getLoadCurve"],
+    affichageInterval: 1000 * 15,
     periode: 1,
     annee_n_minus_1: 1,
     couleur: 3,
@@ -24,6 +27,8 @@ Module.register("MMM-Linky", {
     if (this.config.header) this.data.header = this.getHeaderText();
     this.chart = null;
     this.ChartJsLoaded = false;
+    this.linkyData = {};
+    this.linkyInterval = null;
     this.chartsData = {};
     this.timers = [];
     this.timers.CRON = null;
@@ -55,10 +60,19 @@ Module.register("MMM-Linky", {
         console.error("[LINKY]", payload);
         this.displayMessagerie(payload, "warn");
         break;
+      case "INIT":
+        _linky("Réception des premières données:", payload);
+        this.linkyData = payload;
+        this.displayChartInterval();
+        break;
       case "DATA":
         _linky("Réception des données:", payload);
-        this.chartsData = payload;
-        this.displayChart();
+        if (payload.getDailyConsumption) this.linkyData.getDailyConsumption = payload.getDailyConsumption;
+        if (payload.getLoadCurve) this.linkyData.getLoadCurve = payload.getLoadCurve;
+        if (payload.getMaxPower) this.linkyData.getMaxPower = payload.getMaxPower;
+        if (payload.getDailyProduction) this.linkyData.getDailyProduction = payload.getDailyProduction;
+        if (payload.getProductionLoadCurve) this.linkyData.getProductionLoadCurve = payload.getProductionLoadCurve;
+        _linky("Mise en place des données:", this.linkyData);
         break;
       case "TIMERS":
         _linky("Réception d'un timer:", payload);
@@ -120,21 +134,37 @@ Module.register("MMM-Linky", {
     return periodTexts[this.config.periode] || "Consommation électricité";
   },
 
-  displayChart () {
+  displayChartInterval () {
+    if (this.linkyInterval) return;
+    const call = this.config.apis;
+    this.displayChart(call[0], this.linkyData[call[0]]);
+    if (call.length > 1) {
+      var i = 1;
+      this.linkyInterval = setInterval(() => {
+        if (this.linkyData[call[i]]) {
+          this.displayChart(call[i], this.linkyData[call[i]]);
+        }
+        i++;
+        i = i % call.length;
+      }, this.config.affichageInterval);
+    }
+  },
+
+  displayChart (type, data) {
     const Displayer = document.getElementById("MMM-Linky_Displayer");
     Displayer.classList.add("animate__fadeOut");
     Displayer.style.setProperty("--animate-duration", "0s");
 
-    if (this.chartsData.labels && this.chartsData.datasets) {
+    if (data.labels && data.datasets) {
       try {
         this.displayMessagerie(null, null, true);
-        this.createChart(this.chartsData.labels, this.chartsData.datasets);
-        _linky("Graphique créé avec succès");
-        if (this.config.annee_n_minus_1 === 1) this.displayEnergie();
-        this.displayUpdate();
+        this.createChart(data.labels, data.datasets, type);
+        _linky(`Graphique créé avec succès pour ${type}`);
+        if (this.config.annee_n_minus_1 === 1) this.displayEnergie(data);
+        this.displayUpdate(data);
       } catch (error) {
-        console.error("[LINKY] Erreur lors de la création du graphique : ", error);
-        this.displayMessagerie("Erreur lors de la création du graphique", "warn");
+        console.error(`[LINKY] Erreur lors de la création du graphique ${type}:`, error);
+        this.displayMessagerie(`Erreur lors de la création du graphique ${type}:`, "warn");
       }
     } else {
       this.displayMessagerie("Veuillez patienter, vos données arrivent...");
@@ -148,17 +178,16 @@ Module.register("MMM-Linky", {
     }, 1000);
   },
 
-  displayEnergie () {
-    if (this.config.energie === 0) return;
+  displayEnergie (data) {
     const Energie = document.getElementById("MMM-Linky_Energie");
-    Energie.textContent = this.chartsData.energie.message;
-    Energie.className = this.chartsData.energie.color;
+    Energie.textContent = data.energie?.message || "";
+    Energie.className = data.energie?.color;
   },
 
-  displayUpdate () {
+  displayUpdate (data) {
     if (this.config.updateDate === 0) return;
     const Update = document.getElementById("MMM-Linky_Update");
-    Update.textContent = this.chartsData.update;
+    Update.textContent = data.update;
   },
 
   displayTimer () {
@@ -176,8 +205,10 @@ Module.register("MMM-Linky", {
     else Messagerie.classList.remove("hidden");
   },
 
-  createChart (days, datasets) {
+  createChart (days, datasets, type) {
     const chartContainer = document.getElementById("MMM-Linky_Chart");
+    var chartType = "bar";
+    if (type === "getLoadCurve") chartType = "line";
 
     if (this.chart && typeof this.chart.destroy === "function") {
       this.chart.destroy();
@@ -187,7 +218,7 @@ Module.register("MMM-Linky", {
       Chart.register(ChartDataLabels);
 
       this.chart = new Chart(chartContainer, {
-        type: "bar",
+        type: chartType,
         data: {
           labels: days,
           datasets
@@ -196,7 +227,7 @@ Module.register("MMM-Linky", {
           responsive: true,
           plugins: {
             legend: {
-              display: this.config.annee_n_minus_1 === 1 ? true : false,
+              display: type !== "getLoadCurve" || this.config.annee_n_minus_1 === 1 ? true : false,
               labels: { color: "white" }
             },
             datalabels: this.config.valuebar === 1
@@ -205,24 +236,36 @@ Module.register("MMM-Linky", {
                 anchor: "center",
                 align: "center",
                 rotation: -90,
-                formatter: (value) => (value / 1000).toFixed(2)
+                formatter: (value) => {
+                  if (type === "getLoadCurve") return value.toFixed(2);
+                  else return (value / 1000).toFixed(2);
+                }
               }
               : false
           },
           scales: {
             y: {
               ticks: {
-                callback: (value) => `${value / 1000} kWh`,
+                callback: (value) => {
+                  if (type === "getLoadCurve") return `${value} W`;
+                  else return `${value / 1000} kWh`;
+                },
                 color: "#fff"
               },
               title: {
                 display: true,
-                text: "Consommation (kWh)",
+                text: type === "getLoadCurve" ? "Consommation (W)" : "Consommation (kWh)",
                 color: "#fff"
               }
             },
             x: {
               ticks: { color: "#fff" }
+            }
+          },
+          elements: {
+            point: {
+              radius: 0,
+              hitRadius: 10
             }
           }
         }

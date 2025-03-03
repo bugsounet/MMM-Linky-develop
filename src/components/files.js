@@ -9,7 +9,6 @@ class FILES {
     this.config = config;
     if (this.config.debug) log = (...args) => { console.log("[LINKY] [FILES]", ...args); };
     this.dataPath = path.resolve(__dirname, "../data");
-    this.sendSocketNotification = (...args) => Tools.sendSocketNotification(...args);
   }
 
   // Exporte les donnée Charts
@@ -50,7 +49,7 @@ class FILES {
       access(file, constants.F_OK, (error) => {
         if (error) {
           log(`[${type}] Pas de fichier cache trouvé`);
-          resolve({});
+          resolve();
           return;
         }
 
@@ -58,7 +57,7 @@ class FILES {
         readFile(file, (err, data) => {
           if (err) {
             console.error(`[LINKY] [FILES] [${type}] Erreur de la lecture du fichier cache!`, err);
-            resolve({});
+            resolve();
             return;
           }
           const linkyData = JSON.parse(data);
@@ -67,7 +66,7 @@ class FILES {
           const next = dayjs(linkyData.seed).add(12, "hour").valueOf();
           if (now > next) {
             log(`[${type}] Les dernieres données reçues sont > 12h, utilisation de l'API...`);
-            resolve({});
+            resolve();
           } else {
             log(`[${type}] Utilisation du cache:`, seed);
             resolve(linkyData);

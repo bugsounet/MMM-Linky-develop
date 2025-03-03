@@ -9,7 +9,7 @@ class TIMERS {
     this.config = config;
     if (this.config.debug) log = (...args) => { console.log("[LINKY] [TIMERS]", ...args); };
     this.sendSocketNotification = (...args) => Tools.sendSocketNotification(...args);
-    this.getConsumptionData = () => Tools.getConsumptionData();
+    this.refreshData = () => Tools.refreshData();
     this.timers = {};
     this.timer = null;
     this.cronExpression = "0 0 14 * * *";
@@ -20,7 +20,7 @@ class TIMERS {
     if (this.timer) this.clearRetryTimer();
     this.timer = setTimeout(() => {
       log("Retry-Timer: Démarrage");
-      this.getConsumptionData();
+      this.refreshData();
     }, 1000 * 60 * 60 * 2);
     let job = dayjs(dayjs() + this.timer._idleNext.expiry);
     log("Retry-Timer planifié:", job.format("[Le] DD/MM/YYYY -- HH:mm:ss"));
@@ -43,7 +43,7 @@ class TIMERS {
     this.cronExpression = `${randomSecond} ${randomMinute} 14 * * *`;
     cron.schedule(this.cronExpression, () => {
       log("Exécution de la tâche planifiée de récupération des données.");
-      this.getConsumptionData();
+      this.refreshData();
       this.displayNextCron();
     });
     this.displayNextCron();

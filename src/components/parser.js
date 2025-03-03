@@ -11,7 +11,6 @@ class PARSER {
   constructor (Tools, config) {
     this.config = config;
     if (this.config.debug) log = (...args) => { console.log("[LINKY] [PARSER]", ...args); };
-    this.sendSocketNotification = (...args) => Tools.sendSocketNotification(...args);
   }
 
   parseData (result) {
