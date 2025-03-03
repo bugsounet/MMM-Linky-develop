@@ -112,7 +112,7 @@ const config = [
     }
   },
   {
-    "ignores": ["*.js"]
+    "ignores": ["*.js", "components/*.js"]
   }
 ];
 
