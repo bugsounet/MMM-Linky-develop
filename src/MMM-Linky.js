@@ -8,7 +8,7 @@ Module.register("MMM-Linky", {
     token: "",
     prm: "",
     //apis: ["getDailyConsumption", "getLoadCurve", "getMaxPower", "getDailyProduction", "getProductionLoadCurve"];
-    apis: ["getLoadCurve"],
+    apis: ["getDailyConsumption"],
     affichageInterval: 1000 * 15,
     periode: 1,
     annee_n_minus_1: 1,
@@ -208,6 +208,15 @@ Module.register("MMM-Linky", {
   createChart (days, datasets, type) {
     const chartContainer = document.getElementById("MMM-Linky_Chart");
     var chartType = "bar";
+
+    const displayLegend = () => {
+      if (type === "getLoadCurve") return true;
+      if (type === "getDailyProduction" && this.config.annee_n_minus_1 === 1) return true;
+      if (type === "getProductionLoadCurve") return true;
+      if (type === "getDailyConsumption" && this.config.annee_n_minus_1 === 1) return true;
+      return false;
+    };
+
     if (type === "getLoadCurve") chartType = "line";
 
     if (this.chart && typeof this.chart.destroy === "function") {
@@ -227,7 +236,7 @@ Module.register("MMM-Linky", {
           responsive: true,
           plugins: {
             legend: {
-              display: type !== "getLoadCurve" || this.config.annee_n_minus_1 === 1 ? true : false,
+              display: displayLegend(),
               labels: { color: "white" }
             },
             datalabels: this.config.valuebar === 1
@@ -237,7 +246,7 @@ Module.register("MMM-Linky", {
                 align: "center",
                 rotation: -90,
                 formatter: (value) => {
-                  if (type === "getLoadCurve") return value.toFixed(2);
+                  if (type === "getLoadCurve") return value;
                   else return (value / 1000).toFixed(2);
                 }
               }
@@ -248,13 +257,14 @@ Module.register("MMM-Linky", {
               ticks: {
                 callback: (value) => {
                   if (type === "getLoadCurve") return `${value} W`;
+                  if (type === "getMaxPower") return `${value / 1000} kW`;
                   else return `${value / 1000} kWh`;
                 },
                 color: "#fff"
               },
               title: {
                 display: true,
-                text: type === "getLoadCurve" ? "Consommation (W)" : "Consommation (kWh)",
+                text: type === "getLoadCurve" ? "Consommation (W)" : (type === "getMaxPower" ? "Consommation (kW)" : "Consommation (kWh)"),
                 color: "#fff"
               }
             },

@@ -27,6 +27,8 @@ class CHART {
       if (index === 0) {
         if (isSimpleDay) {
           days.push(...data.map((item) => dayjs(item.date).locale("fr").format("HH:mm")));
+        } else if (type === "getMaxPower") {
+          days.push(...data.map((item) => dayjs(item.date).locale("fr").format("DD MMM HH:mm")));
         } else {
           days.push(...data.map((item) => dayjs(item.date).locale("fr").format("DD MMM")));
         }
@@ -49,11 +51,12 @@ class CHART {
       console.warn("[LINKY] [CHART] Il manque des données pour une des 2 années.");
       console.warn("[LINKY] [CHART] L'affichage risque d'être corrompu.");
     }
+    const removeEnergie = !(isSimpleDay || type === "getMaxPower");
 
     return {
       labels: days,
       datasets: datasets,
-      energie: !isSimpleDay && this.config.energie === 1 && this.config.annee_n_minus_1 === 1 ? this.setEnergie(type, detail) : null,
+      energie: removeEnergie && this.config.energie === 1 && this.config.annee_n_minus_1 === 1 ? this.setEnergie(type, detail) : null,
       update: `Données du ${dayjs().format("DD/MM/YYYY -- HH:mm:ss")}`,
       seed: dayjs().valueOf()
     };
@@ -97,7 +100,7 @@ class CHART {
         return null;
     }
 
-    if (this.config.annee_n_minus_1 === 1) {
+    if (this.config.annee_n_minus_1 === 1 && type !== "getMaxPower") {
       start = start.subtract(1, "year");
     }
 
