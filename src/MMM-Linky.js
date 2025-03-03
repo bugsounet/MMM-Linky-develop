@@ -157,7 +157,7 @@ Module.register("MMM-Linky", {
 
     if (data.labels && data.datasets) {
       try {
-        this.displayMessagerie(null, null, true);
+        //this.displayMessagerie(null, null, true);
         this.createChart(data.labels, data.datasets, type);
         _linky(`Graphique créé avec succès pour ${type}`);
         if (this.config.annee_n_minus_1 === 1) this.displayEnergie(data);
