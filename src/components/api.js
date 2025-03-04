@@ -6,7 +6,6 @@ class API {
     this.config = config;
     if (this.config.debug) log = (...args) => { console.log("[LINKY] [API]", ...args); };
     this.sendError = (error) => Tools.sendError(error);
-    this.retryTimer = () => Tools.retryTimer();
     this.api = ["getDailyConsumption", "getLoadCurve", "getMaxPower", "getDailyProduction", "getProductionLoadCurve"];
 
   }
@@ -47,23 +46,25 @@ class API {
             resolve(result);
           })
           .catch((error) => {
-            this.catchError(error);
+            this.catchError(error, type);
             resolve({ error: true });
           });
       }
     });
   }
 
-  catchError (error) {
-    if (error.message) {
+  catchError (error, type) {
+    var msgError;
+    if (error.response?.status) {
+      console.error(`[LINKY] [API] [${type}] [Erreur ${error.response.status}] ${error.response.message}`);
+      console.error(`[LINKY] [API] [${type}] Description:`, error.response.error);
+      msgError = `(${error.response.status}) ${type}: ${error.response.message}`;
+    } else if (error.message) {
       console.error(`[LINKY] [API] [Erreur ${error.code}] ${error.message}`);
-      let msgError = `[Erreur ${error.code}] ${error.message}`;
-      this.sendError(msgError);
-    } else {
-      // must never Happen...
-      console.error("[LINKY] [API] !TO DEBUG!", error);
+      msgError = `(${error.code}) ${type}: ${error.message}`;
     }
-    //this.retryTimer();
+    if (!msgError) msgError = `${type}: ${error.toString()}`;
+    this.sendError(msgError);
   }
 }
 module.exports = API;

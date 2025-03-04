@@ -10,7 +10,6 @@ class FETCHER {
     this.config = config;
     if (this.config.debug) log = (...args) => { console.log("[LINKY] [FETCHER]", ...args); };
     this.sendError = (error) => Tools.sendError(error);
-    this.clearRetryTimer = () => Tools.clearRetryTimer();
     this.retryTimer = () => Tools.retryTimer();
     this.chart = new chart(Tools, this.config);
     this.parser = new parser(Tools, this.config);
@@ -57,7 +56,7 @@ class FETCHER {
         } else {
           if (result.start && result.end && result.interval_reading) {
             log(`[${type}] Données reçues de l'API:`, result);
-            data = this.parser.parseData(result);
+            data = this.parser.parseData(type, result);
           } else {
             console.error(`[LINKY] [${type}] Format inattendu des données:`, result);
             if (result.error) {
@@ -72,7 +71,6 @@ class FETCHER {
 
     if (!error) {
       log(`[${type}] Données de consommation collecté:`, data);
-      this.clearRetryTimer();
       const chartData = this.chart.setChartValue(type, data);
       this.files.saveChartData(type, chartData);
       return chartData;

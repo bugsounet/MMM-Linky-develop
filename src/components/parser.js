@@ -13,7 +13,7 @@ class PARSER {
     if (this.config.debug) log = (...args) => { console.log("[LINKY] [PARSER]", ...args); };
   }
 
-  parseData (result) {
+  parseData (type, result) {
     log("Démarrage...");
     var data = {};
     var added = 0;
@@ -25,7 +25,7 @@ class PARSER {
 
       if (!data[year]) data[year] = [];
 
-      if (this.config.annee_n_minus_1 === 1) {
+      if (type.includes("getDaily") && this.config.annee_n_minus_1 === 1) {
         var current = dayjs().set("hour", 0).set("minute", 0).set("second", 0);
         const currentIsLeapYear = current.isLeapYear();
         const currentYear = current.year();

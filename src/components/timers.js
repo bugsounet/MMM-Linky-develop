@@ -29,7 +29,8 @@ class TIMERS {
 
   // Retry Timer kill
   clearRetryTimer () {
-    if (this.timer) log("Retry-Timer: Arrêt");
+    if (!this.timer) return;
+    log("Retry-Timer: Arrêt");
     clearTimeout(this.timer);
     this.timer = null;
     this.sendTimer(null, null, "RETRY");

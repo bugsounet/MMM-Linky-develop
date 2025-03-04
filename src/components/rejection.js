@@ -5,34 +5,22 @@ class REJECTION {
     this.config = config;
     if (this.config.debug) log = (...args) => { console.log("[LINKY] [REJECTION]", ...args); };
     this.sendError = (error) => Tools.sendError(error);
-    this.retryTimer = () => Tools.retryTimer();
   }
 
   catchUnhandledRejection () {
     log("Live Scan Démarré...");
     process.on("unhandledRejection", (error) => {
-      // catch conso API error and Enedis only
-      if (error.stack.includes("MMM-Linky/node_modules/linky/") && error.response) {
-        // catch Enedis error
-        if (error.response.status && error.response.message && error.response.error) {
-          console.error(`[LINKY] [REJECTION] [${error.response.status}] ${error.response.message}`);
-          this.error = error.response.message;
-          this.sendError("ERROR", this.error);
-        }
-        this.retryTimer();
+      // detect any errors of node_helper of MMM-Linky
+      if (error.stack.includes("MMM-Linky/node_helper.js")) {
+        console.error(`[LINKY] [REJECTION] ${this._citation()}`);
+        console.error("[LINKY] [REJECTION] ---------");
+        console.error("[LINKY] [REJECTION] node_helper Error:", error);
+        console.error("[LINKY] [REJECTION] ---------");
+        console.error("[LINKY] [REJECTION] Merci de signaler cette erreur aux développeurs");
+        this.sendError(`[Core Crash] ${error}`);
       } else {
-        // detect any errors of node_helper of MMM-Linky
-        if (error.stack.includes("MMM-Linky/node_helper.js")) {
-          console.error(`[LINKY] [REJECTION] ${this._citation()}`);
-          console.error("[LINKY] [REJECTION] ---------");
-          console.error("[LINKY] [REJECTION] node_helper Error:", error);
-          console.error("[LINKY] [REJECTION] ---------");
-          console.error("[LINKY] [REJECTION] Merci de signaler cette erreur aux développeurs");
-          this.sendError(`[Core Crash] ${error}`);
-        } else {
-          // from other modules (must never happen... but...)
-          console.error("-Other-", error);
-        }
+        // from other modules (must never happen... but...)
+        console.error("-Other-", error);
       }
     });
   }

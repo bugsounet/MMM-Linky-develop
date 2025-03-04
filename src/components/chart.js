@@ -113,7 +113,7 @@ class CHART {
   setEnergie (type, data) {
     const currentYearTotal = this.calculateTotalConsumption(dayjs().get("year"), data);
     const previousYearTotal = this.calculateTotalConsumption(dayjs().subtract(1, "year").get("year"), data);
-    const ProductionOrConsomation = type.includes("Production") ? "production" : "consomation";
+    const isProduction = type.includes("Production") ? true : false;
 
     var message, color, periodText;
 
@@ -132,13 +132,23 @@ class CHART {
     }
 
     if (currentYearTotal < previousYearTotal) {
-      message = `Félicitations, votre ${ProductionOrConsomation} d'énergie a baissé sur ${periodText} par rapport à l'année dernière !`;
-      color = "green";
+      if (isProduction) {
+        message = `Attention, votre production d'énergie a baissé sur ${periodText} par rapport à l'année dernière !`;
+        color = "red";
+      } else {
+        message = `Félicitations, votre consomation d'énergie a baissé sur ${periodText} par rapport à l'année dernière !`;
+        color = "green";
+      }
     } else if (currentYearTotal > previousYearTotal) {
-      message = `Attention, votre ${ProductionOrConsomation} d'énergie a augmenté sur ${periodText} par rapport à l'année dernière !`;
-      color = "red";
+      if (isProduction) {
+        message = `Félicitations, votre production d'énergie a augmenté sur ${periodText} par rapport à l'année dernière !`;
+        color = "green";
+      } else {
+        message = `Attention, votre consomation d'énergie a augmenté sur ${periodText} par rapport à l'année dernière !`;
+        color = "red";
+      }
     } else {
-      message = `Votre ${ProductionOrConsomation} d'énergie est stable sur ${periodText} par rapport à l'année dernière.`;
+      message = `Votre ${isProduction ? "production" : "consomation"} d'énergie est stable sur ${periodText} par rapport à l'année dernière.`;
       color = "yellow";
     }
 

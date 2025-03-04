@@ -5,11 +5,6 @@ const rejection = require("./components/rejection");
 const fetcher = require("./components/fetcher");
 
 module.exports = NodeHelper.create({
-  start () {
-    this.config = null;
-    this.error = null;
-  },
-
   socketNotificationReceived (notification, payload) {
     switch (notification) {
       case "INIT":
@@ -28,6 +23,7 @@ module.exports = NodeHelper.create({
   // intialisation de MMM-Linky
   async initialize () {
     console.log(`[LINKY] MMM-Linky Version: ${require("./package.json").version} Revison: ${require("./package.json").rev}`);
+    const apis = ["getDailyConsumption", "getLoadCurve", "getMaxPower", "getDailyProduction", "getProductionLoadCurve"];
     const Tools = {
       sendError: (error) => {
         this.error = error;
@@ -35,10 +31,10 @@ module.exports = NodeHelper.create({
       },
       sendSocketNotification: (...args) => this.sendSocketNotification(...args),
       retryTimer: () => this.tasks.retryTimer(),
-      clearRetryTimer: () => this.tasks.clearRetryTimer(),
       saveChartData: (...args) => this.files.saveChartData(...args),
       refreshData: async () => {
-        this.data = await this.fecher.refresh();
+        this.tasks.clearRetryTimer();
+        this.data = await this.fetcher.refresh();
         this.sendSocketNotification("DATA", this.data);
       }
     };
@@ -46,11 +42,36 @@ module.exports = NodeHelper.create({
     this.rejection = new rejection(Tools, this.config);
     this.rejection.catchUnhandledRejection();
 
+    if (!Array.isArray(this.config.apis)) {
+      this.error = "[config] Les APIs doivent être inscrite dans le tableau apis:[]";
+      this.sendSocketNotification("ERROR", this.error);
+      return;
+    }
+
+    if (!this.config.apis.length) {
+      this.error = "[config] Veuillez spécifier une API dans apis:[]";
+      this.sendSocketNotification("ERROR", this.error);
+      return;
+    }
+
+    const uniqAPI = [...new Set(this.config.apis)];
+    this.config.apis = uniqAPI;
+
+    for (const api of this.config.apis) {
+      if (!apis.includes(api)) {
+        this.error = `[config.apis] L'api ${api} n'est pas valide.`;
+        this.sendSocketNotification("ERROR", this.error);
+        return;
+      }
+    }
+
+    this.sendSocketNotification("CONFIG", this.config.apis);
+
     this.tasks = new timers(Tools, this.config);
     this.tasks.scheduleDataFetch();
 
-    this.fecher = new fetcher(Tools, this.config);
-    this.data = await this.fecher.loadCache();
+    this.fetcher = new fetcher(Tools, this.config);
+    this.data = await this.fetcher.loadCache();
 
     this.sendSocketNotification("INIT", this.data);
   },

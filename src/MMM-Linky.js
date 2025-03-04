@@ -24,7 +24,7 @@ Module.register("MMM-Linky", {
   start () {
     Log.info("[LINKY] MMM-Linky démarré...");
     if (this.config.debug) _linky = (...args) => { console.log("[MMM-Linky]", ...args); };
-    if (this.config.header) this.data.header = this.getHeaderText();
+    if (this.config.header) this.data.header = "Veuillez patienter, vos données arrivent...";
     this.chart = null;
     this.ChartJsLoaded = false;
     this.linkyData = {};
@@ -59,6 +59,10 @@ Module.register("MMM-Linky", {
       case "ERROR":
         console.error("[LINKY]", payload);
         this.displayMessagerie(payload, "warn");
+        break;
+      case "CONFIG":
+        _linky("Réception de la configuration APIs:", payload);
+        this.config.apis = payload;
         break;
       case "INIT":
         _linky("Réception des premières données:", payload);
@@ -125,13 +129,34 @@ Module.register("MMM-Linky", {
     return wrapper;
   },
 
-  getHeaderText () {
+  getHeaderText (type) {
+    if (!this.config.header) return;
+    var text;
     const periodTexts = {
-      1: "Consommation électricité de la veille",
-      2: "Consommation électricité des 3 derniers jours",
-      3: "Consommation électricité des 7 derniers jours"
+      1: "de la veille",
+      2: "des 3 derniers jours",
+      3: "des 7 derniers jours"
     };
-    return periodTexts[this.config.periode] || "Consommation électricité";
+    switch (type) {
+      case "getDailyConsumption":
+        text = `Consommation ${periodTexts[this.config.periode]}`;
+        break;
+      case "getLoadCurve":
+        text = `Consommation ${periodTexts[1]}`;
+        break;
+      case "getMaxPower":
+        text = `Puissance maximale ${periodTexts[this.config.periode]}`;
+        break;
+      case "getDailyProduction":
+        text = `Production ${periodTexts[this.config.periode]}`;
+        break;
+      case "getProductionLoadCurve":
+        text = `Production ${periodTexts[this.config.periode]}`;
+        break;
+      default:
+        text = "Consommation électricité";
+    }
+    return text;
   },
 
   displayChartInterval () {
@@ -157,7 +182,7 @@ Module.register("MMM-Linky", {
 
     if (data.labels && data.datasets) {
       try {
-        //this.displayMessagerie(null, null, true);
+        if (!this.timers.RETRY?.seed) this.displayMessagerie(null, null, true);
         this.createChart(data.labels, data.datasets, type);
         _linky(`Graphique créé avec succès pour ${type}`);
         if (this.config.annee_n_minus_1 === 1) this.displayEnergie(data);
@@ -167,7 +192,8 @@ Module.register("MMM-Linky", {
         this.displayMessagerie(`Erreur lors de la création du graphique ${type}:`, "warn");
       }
     } else {
-      this.displayMessagerie("Veuillez patienter, vos données arrivent...");
+      console.error(`[LINKY] Erreur de la lecture des données pour ${type}`);
+      this.displayMessagerie(`[LINKY] Erreur de la lecture des données pour ${type}`, "warn");
     }
 
     Displayer.classList.remove("animate__fadeOut");
@@ -194,7 +220,7 @@ Module.register("MMM-Linky", {
     if (this.config.updateNext === 0) return;
     const Timer = document.getElementById("MMM-Linky_Timer");
     if (this.timers.RETRY?.seed < this.timers.CRON.seed) Timer.textContent = this.timers.RETRY.date;
-    else Timer.textContent = this.timers.CRON.date;
+    else Timer.innerText = this.timers.CRON.date;
   },
 
   displayMessagerie (text, color, hide) {
@@ -207,6 +233,9 @@ Module.register("MMM-Linky", {
 
   createChart (days, datasets, type) {
     const chartContainer = document.getElementById("MMM-Linky_Chart");
+    const headerContainer = document.getElementById(this.identifier).getElementsByClassName("module-header")[0];
+    headerContainer.textContent = this.getHeaderText(type);
+
     var chartType = "bar";
 
     const displayLegend = () => {
@@ -274,8 +303,8 @@ Module.register("MMM-Linky", {
           },
           elements: {
             point: {
-              radius: 0,
-              hitRadius: 10
+              radius: 1,
+              pointStyle: false
             }
           }
         }
