@@ -250,16 +250,6 @@ Module.register("MMM-Linky", {
       return false;
     };
 
-    const dispayTitle = () => {
-      var text;
-      if (type === "getDailyConsumption") text = "Consommation (kWh)";
-      if (type === "getLoadCurve") text = "Consommation (W)";
-      if (type === "getMaxPower") text = "Consommation (kW)";
-      if (type === "getProductionLoadCurve") text = "Production (W)";
-      if (type === "getDailyProduction") text = "Production (kWh)";
-      return text;
-    };
-
     if (this.chart && typeof this.chart.destroy === "function") {
       this.chart.destroy();
     }
@@ -307,7 +297,7 @@ Module.register("MMM-Linky", {
               },
               title: {
                 display: true,
-                text: dispayTitle(),
+                text: type.includes("Production") ? "Production" : "Consommation",
                 color: "#fff"
               }
             },
