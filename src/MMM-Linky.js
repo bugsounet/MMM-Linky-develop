@@ -233,10 +233,14 @@ Module.register("MMM-Linky", {
 
   createChart (days, datasets, type) {
     const chartContainer = document.getElementById("MMM-Linky_Chart");
+
     const headerContainer = document.getElementById(this.identifier).getElementsByClassName("module-header")[0];
     headerContainer.textContent = this.getHeaderText(type);
 
     var chartType = "bar";
+    if (type === "getLoadCurve" || type === "getProductionLoadCurve") {
+      chartType = "line";
+    }
 
     const displayLegend = () => {
       if (type === "getLoadCurve") return true;
@@ -246,7 +250,15 @@ Module.register("MMM-Linky", {
       return false;
     };
 
-    if (type === "getLoadCurve") chartType = "line";
+    const dispayTitle = () => {
+      var text;
+      if (type === "getDailyConsumption") text = "Consommation (kWh)";
+      if (type === "getLoadCurve") text = "Consommation (W)";
+      if (type === "getMaxPower") text = "Consommation (kW)";
+      if (type === "getProductionLoadCurve") text = "Production (W)";
+      if (type === "getDailyProduction") text = "Production (kWh)";
+      return text;
+    };
 
     if (this.chart && typeof this.chart.destroy === "function") {
       this.chart.destroy();
@@ -276,7 +288,8 @@ Module.register("MMM-Linky", {
                 rotation: -90,
                 formatter: (value) => {
                   if (type === "getLoadCurve") return value;
-                  else return (value / 1000).toFixed(2);
+                  if (type === "getProductionLoadCurve") return value;
+                  return (value / 1000).toFixed(2);
                 }
               }
               : false
@@ -286,14 +299,15 @@ Module.register("MMM-Linky", {
               ticks: {
                 callback: (value) => {
                   if (type === "getLoadCurve") return `${value} W`;
+                  if (type === "getProductionLoadCurve") return `${value} W`;
                   if (type === "getMaxPower") return `${value / 1000} kW`;
-                  else return `${value / 1000} kWh`;
+                  return `${value / 1000} kWh`;
                 },
                 color: "#fff"
               },
               title: {
                 display: true,
-                text: type === "getLoadCurve" ? "Consommation (W)" : (type === "getMaxPower" ? "Consommation (kW)" : "Consommation (kWh)"),
+                text: dispayTitle(),
                 color: "#fff"
               }
             },
@@ -310,8 +324,8 @@ Module.register("MMM-Linky", {
         }
       });
     } else {
-      console.error("[LINKY] Impossible de créer le graphique : données invalides.");
-      this.displayMessagerie("Impossible de créer le graphique : données invalides.", "warn");
+      console.error(`[LINKY] Impossible de créer le graphique ${type}: données invalides.`);
+      this.displayMessagerie(`Impossible de créer le graphique ${type}: données invalides.`, "warn");
     }
   }
 });
