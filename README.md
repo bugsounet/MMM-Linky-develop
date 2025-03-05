@@ -110,7 +110,7 @@ Il est également possible d'afficher vos données de production d'energie.
 
 Afin d'éviter une surcharge de l'api, une mise en cache des données a été mise en place.
 
-De ce fait, lors d'un redémarrage de `MagicMirror²`, `MMM-Linky` utilisera les dernières données reçues.
+De ce fait, lors d'un redémarrage de `MagicMirror²`, `MMM-Linky` utilisera les dernières données converties pour l'affichage graphique.
 
 La validité de ce cache à été fixé a 10h.
 
