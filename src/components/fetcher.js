@@ -70,7 +70,7 @@ class FETCHER {
       });
 
     if (!error) {
-      log(`[${type}] Données de consommation collecté:`, data);
+      log(`[${type}] Données collectées:`, data);
       const chartData = this.chart.setChartValue(type, data);
       this.files.saveChartData(type, chartData);
       return chartData;

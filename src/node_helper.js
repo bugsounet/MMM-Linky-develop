@@ -11,7 +11,7 @@ module.exports = NodeHelper.create({
         if (!this.ready) {
           this.config = payload;
           this.ready = true;
-          this.consumptionData = {};
+          this.data = {};
           this.initialize();
         } else {
           this.initWithCache();
