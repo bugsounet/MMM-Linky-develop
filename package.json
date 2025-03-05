@@ -35,6 +35,7 @@
     "minify": "node installer/minify",
     "preinstall": "echo ⚠ Please use: npm run setup && exit 1",
     "reset": "node installer/reset",
+    "reset:cache": "node installer/cache",
     "setup": "node installer/setup",
     "test": "npm run lint",
     "test:all": "npm run lint && npm run test:css && npm run test:markdown",
