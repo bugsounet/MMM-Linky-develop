@@ -112,7 +112,7 @@ Afin d'éviter une surcharge de l'api, une mise en cache des données a été mi
 
 De ce fait, lors d'un redémarrage de `MagicMirror²`, `MMM-Linky` utilisera les dernières données converties pour l'affichage graphique.
 
-La validité de ce cache à été fixé a 10h.
+La validité de ce cache à été fixé à 10h.
 
 ## Effacer le cache des données
 
@@ -125,7 +125,7 @@ Il est déconseillé d'utiliser cette commande trop souvent car l'api a un usage
 * Maximum de 5 requêtes par seconde.
 * Maximum de 10 000 requêtes par heure.
 
-⚠ Si vous dépasser une des régles, votre adresse IP se retrouvera bloqué sans avertissement !
+⚠ Si vous dépassez une des régles, votre adresse IP se retrouvera bloqué sans avertissement !
 
 Malheurement, nous avons aucun pouvoir pour la débloquer...
 
