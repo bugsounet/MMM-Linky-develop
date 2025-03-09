@@ -17,12 +17,10 @@ Les données sont actualisées chaque jour entre 12h et 12h15.
 ![Conso 3 derniers jours JPG](https://github.com/user-attachments/assets/c6658811-e6f4-4a5d-8e2c-ea0a53189fea)
 ![Conso veille](https://github.com/user-attachments/assets/2e50eac0-71d2-44b4-9c78-0e9f4f1b80db)
 
-
 Possibilité de choisir entre 4 thèmes de couleur pour le graphique et d'afficher les valeurs dans les barres :
 
 ![WithDataLabel](https://github.com/user-attachments/assets/3ee608d5-3127-4adb-b6c3-2a3a07f6111e)
 ![Capture](https://github.com/user-attachments/assets/a4d7366f-9f04-4a02-afaf-221caa9e1872)
-
 
 ## Installation
 

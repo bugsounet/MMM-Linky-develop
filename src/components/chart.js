@@ -14,7 +14,7 @@ class CHART {
   // création des données chartjs
   setChartValue (type, detail) {
     const isSimpleDay = this.simpleDay.includes(type);
-    const day = dayjs().subtract(1, "day").locale("fr").format("DD MMM YYYY");
+    const day = dayjs().subtract(1, "day").locale("fr").format("D MMM YYYY");
     const days = [];
     const datasets = [];
     const colors = this.getChartColors();
@@ -40,8 +40,10 @@ class CHART {
         data: values,
         backgroundColor: colors[index],
         borderColor: colors[index].replace("0.8", "1"),
-        borderWidth: 1,
-        tension: 0.4
+        borderWidth: type.includes("Curve") ? 3 : 1,
+        tension: 0.4,
+        pointRadius: 0,
+        pointStyle: false
       });
       index++;
     }
