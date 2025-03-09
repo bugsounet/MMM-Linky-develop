@@ -8,7 +8,7 @@ Si vous choisissez de récupérer les données de l'année précédente une comp
 
 Le header est également dynamique et changera en fonction de la période sélectionnée !
 
-Les données sont actualisées chaque jour entre 14h et 15h.
+Les données sont actualisées chaque jour entre 12h et 12h15.
 
 ## ScreenShots
 
@@ -69,6 +69,7 @@ Configuration minimale :
       config: {
         prm: "",
         token: "",
+        apis: ["getDailyConsumption"]
       },
     },
 ```
@@ -79,9 +80,11 @@ Option|Default|Description
 ---|---|---
 `debug`|0|Active le mode débogage. <br>`1` : activer <br> `0` : Désactiver
 `prm`||Votre numéro PDL Linky [VOIR ICI](https://www.enedis.fr/faq/compteur-linky/ou-trouver-le-numero-point-de-livraison-pdl-du-compteur-linky)
-`token`||Votre token personnel  [CONSO API](https://conso.boris.sh/)
+`token`||Votre token personnel [CONSO API](https://conso.boris.sh/)
 `periode`|1|Choix de la période: <br>`1` = Données de la veille <br>`2` = 3 derniers jours <br>`3` = 7 derniers jours
-`annee_n_minus_1`|1|Récupérer les données de l'année précédente. <br>`1` : Activer <br> `0` : Désactiver
+`apis`|["getDailyConsumption"]|Nom des API à interroger (voir ci-dessous)
+`affichageInterval`|1000 * 15|Interval d'affichage des graphiques en ms (si utilisation de plusieurs API)
+`annee_n_minus_1`|1|Récupérer les données de l'année précédente. (uniquement pour les api `getDailyConsumption` et `getDailyProduction`) <br>`1` : Activer <br> `0` : Désactiver
 `couleur`|3| `1` : Bleu et Rose <br>`2` : Jaune et Vert <br>`3` : Blanc et Bleu <br>`4` : Orange et Violet
 `valuebar`|1|Affiche les valeurs à l'intérieur des barres. <br>`1` : Afficher <br>`0` : Masquer
 `valuebartextcolor`|0|Couleur du texte des valeurs. <br>`0` : Texte noir <br>`1` : Texte blanc
@@ -89,6 +92,59 @@ Option|Default|Description
 `energie`|1|Affiche l'indicateur de consomation d'énergie. <br>`1` : Afficher <br>`0` : Masquer
 `updateDate`|1|Affiche la date de récupération des données. <br>`1` : Afficher <br>`0` : Masquer
 `updateNext`|1|Affiche la date du prochain cycle de récupération des données. <br>`1` : Afficher <br>`0` : Masquer
+
+### apis
+
+Grâce à `Conso API`, vous pouvez interroger plusieurs api et afficher le graphique correspondant.
+
+* `getDailyConsumption`: Récupère la consommation quotidienne.
+* `getLoadCurve`: Récupère la puissance moyenne consommée de la veille sur un intervalle de 30 min.
+* `getMaxPower`: Récupère la puissance maximale de consommation atteinte quotidiennement.
+
+Il est également possible d'afficher vos données de production d'energie.
+
+* `getDailyProduction`: Récupère la production quotidienne.
+* `getProductionLoadCurve`: Récupère la puissance moyenne produite sur un intervalle de 30 min.
+
+## Mise en cache des données
+
+Afin d'éviter une surcharge de l'api, une mise en cache des données a été mise en place.
+
+De ce fait, lors d'un redémarrage de `MagicMirror²`, `MMM-Linky` utilisera les dernières données reçues de l'api.
+
+La validité de ce cache à été fixé à 10h.
+
+## Effacer le cache des données
+
+Vous pouvez toute fois détruire ce cache avec la commande: `npm run reset:cache`
+
+Il est déconseillé d'utiliser cette commande trop souvent car l'api a un usage limité.
+
+`Conso API` a fixé cette régle:
+
+* Maximum de 5 requêtes par seconde.
+* Maximum de 10 000 requêtes par heure.
+
+⚠ Si vous dépassez une des régles, votre adresse IP se retrouvera bloqué sans avertissement !
+
+Malheurement, nous avons aucun pouvoir pour la débloquer...
+
+Pour rappel un appel API c'est une requête. si vous utilisez 2 API en config... c'est donc 2 requêtes !
+
+## Changement de configuration
+
+Afin de générer un nouveau cache, une nouvelle requête sera relancé pour les API suivantes (si utilisé)
+
+↪️ En cas de changement de configuration `periode`
+
+* `getDailyConsumption`
+* `getMaxPower`
+* `getDailyProduction`
+
+↪️ En cas de changement de configuration `annee_n_minus_1`
+
+* `getDailyConsumption`
+* `getDailyProduction`
 
 ## Mise à jour
 
