@@ -29,9 +29,9 @@ class CHART {
         if (isSimpleDay) {
           days.push(...data.map((item) => dayjs(item.date).locale("fr").format("HH:mm")));
         } else if (type === "getMaxPower") {
-          days.push(...data.map((item) => dayjs(item.date).locale("fr").format("DD MMM HH:mm")));
+          days.push(...data.map((item) => dayjs(item.date).locale("fr").format("D MMM HH:mm")));
         } else {
-          days.push(...data.map((item) => dayjs(item.date).locale("fr").format("DD MMM")));
+          days.push(...data.map((item) => dayjs(item.date).locale("fr").format("D MMM")));
         }
       }
 
