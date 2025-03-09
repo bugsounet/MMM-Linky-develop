@@ -40,7 +40,7 @@ class CHART {
         data: values,
         backgroundColor: colors[index],
         borderColor: colors[index].replace("0.8", "1"),
-        borderWidth: 1,
+        borderWidth: type.includes("Curve") ? 3 : 1,
         tension: 0.4
       });
       index++;
