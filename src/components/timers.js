@@ -12,7 +12,7 @@ class TIMERS {
     this.refreshData = () => Tools.refreshData();
     this.timers = {};
     this.timer = null;
-    this.cronExpression = "0 0 14 * * *";
+    this.cronExpression = "0 0 12 * * *";
   }
 
   // Retry Timer en cas d'erreur, relance la requete 2 heures apres
@@ -38,10 +38,10 @@ class TIMERS {
 
   // Récupération planifié des données
   scheduleDataFetch () {
-    const randomMinute = Math.floor(Math.random() * 59);
+    const randomMinute = Math.floor(Math.random() * 15);
     const randomSecond = Math.floor(Math.random() * 59);
 
-    this.cronExpression = `${randomSecond} ${randomMinute} 14 * * *`;
+    this.cronExpression = `${randomSecond} ${randomMinute} 12 * * *`;
     cron.schedule(this.cronExpression, () => {
       log("Exécution de la tâche planifiée de récupération des données.");
       this.refreshData();

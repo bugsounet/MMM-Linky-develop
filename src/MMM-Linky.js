@@ -168,6 +168,8 @@ Module.register("MMM-Linky", {
       this.linkyInterval = setInterval(() => {
         if (this.linkyData[call[i]]) {
           this.displayChart(call[i], this.linkyData[call[i]]);
+        } else {
+          this.displayMessagerie(`Aucune données pour la création du graphique ${call[i]}`, "warn");
         }
         i++;
         i = i % call.length;
@@ -180,7 +182,7 @@ Module.register("MMM-Linky", {
     Displayer.classList.add("animate__fadeOut");
     Displayer.style.setProperty("--animate-duration", "0s");
 
-    if (data.labels && data.datasets) {
+    if (data?.labels && data?.datasets) {
       try {
         if (!this.timers.RETRY?.seed) this.displayMessagerie(null, null, true);
         this.createChart(data.labels, data.datasets, type);
@@ -193,7 +195,7 @@ Module.register("MMM-Linky", {
       }
     } else {
       console.error(`[LINKY] Erreur de la lecture des données pour ${type}`);
-      this.displayMessagerie(`[LINKY] Erreur de la lecture des données pour ${type}`, "warn");
+      this.displayMessagerie(`Erreur de la lecture des données pour ${type}`, "warn");
     }
 
     Displayer.classList.remove("animate__fadeOut");

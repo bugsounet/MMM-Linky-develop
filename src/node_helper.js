@@ -31,7 +31,6 @@ module.exports = NodeHelper.create({
       },
       sendSocketNotification: (...args) => this.sendSocketNotification(...args),
       retryTimer: () => this.tasks.retryTimer(),
-      saveChartData: (...args) => this.files.saveChartData(...args),
       refreshData: async () => {
         this.tasks.clearRetryTimer();
         this.data = await this.fetcher.refresh();

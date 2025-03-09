@@ -18,10 +18,11 @@ class CHART {
     const days = [];
     const datasets = [];
     const colors = this.getChartColors();
+    const { datas, seed } = detail;
 
     let index = 0;
-    for (const year in detail) {
-      const data = detail[year];
+    for (const year in datas) {
+      const data = datas[year];
       const values = data.map((item) => item.value);
 
       if (index === 0) {
@@ -56,9 +57,8 @@ class CHART {
     return {
       labels: days,
       datasets: datasets,
-      energie: removeEnergie && this.config.energie === 1 && this.config.annee_n_minus_1 === 1 ? this.setEnergie(type, detail) : null,
-      update: `Données du ${dayjs().format("DD/MM/YYYY -- HH:mm:ss")}`,
-      seed: dayjs().valueOf()
+      energie: removeEnergie && this.config.energie === 1 && this.config.annee_n_minus_1 === 1 ? this.setEnergie(type, datas) : null,
+      update: `Données du ${dayjs(seed).format("DD/MM/YYYY -- HH:mm:ss")}`
     };
   }
 
