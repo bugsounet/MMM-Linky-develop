@@ -1,4 +1,5 @@
 /node_modules/
 /MMM-Linky.js
 /node_helper.js
-/linkyData.json
+/components/
+/data/*.json

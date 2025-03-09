@@ -25,7 +25,11 @@ async function checkOS () {
       }
       utils.empty();
       await utils.checkRoot();
+      await functions.updatePackageInfoLinux();
+      await functions.installLinuxDeps();
       await functions.installNPMDeps();
+      await functions.postInstall();
+      await functions.electronRebuild();
       await functions.installFiles();
       functions.done();
       break;
@@ -38,6 +42,7 @@ async function checkOS () {
     case "Windows":
       utils.success(`OS Detected: Windows (${sysinfo.name} ${sysinfo.version} ${sysinfo.arch})`);
       await functions.installNPMDeps();
+      await functions.postInstall();
       await functions.installFiles();
       functions.done();
       break;
