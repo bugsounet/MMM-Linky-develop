@@ -14,7 +14,7 @@ class CHART {
   // création des données chartjs
   setChartValue (type, detail) {
     const isSimpleDay = this.simpleDay.includes(type);
-    const day = dayjs().subtract(1, "day").locale("fr").format("DD MMM YYYY");
+    const day = dayjs().subtract(1, "day").locale("fr").format("D MMM YYYY");
     const days = [];
     const datasets = [];
     const colors = this.getChartColors();
