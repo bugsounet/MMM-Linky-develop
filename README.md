@@ -135,13 +135,13 @@ Pour rappel un appel API c'est une requête. si vous utilisez 2 API en config...
 
 Afin de générer un nouveau cache, une nouvelle requête sera relancé pour les API suivantes (si utilisé)
 
-### En cas de changement de configuration `periode`
+↪️ En cas de changement de configuration `periode`
 
 * `getDailyConsumption`
 * `getMaxPower`
 * `getDailyProduction`
 
-### En cas de changement de configuration `annee_n_minus_1`
+↪️ En cas de changement de configuration `annee_n_minus_1`
 
 * `getDailyConsumption`
 * `getDailyProduction`
