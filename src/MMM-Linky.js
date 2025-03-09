@@ -320,8 +320,6 @@ Module.register("MMM-Linky", {
                 align: "center",
                 rotation: -90,
                 formatter: (value) => {
-                  if (type === "getLoadCurve") return value;
-                  if (type === "getProductionLoadCurve") return value;
                   return (value / 1000).toFixed(2);
                 }
               }
