@@ -12,7 +12,7 @@ class FILES {
   }
 
   // Exporte les donnée Charts
-  saveChartData (type, data) {
+  saveData (type, data) {
     if (!type) {
       console.error("[LINKY] [FILES] Type de Données inconnue");
       return;
@@ -36,7 +36,7 @@ class FILES {
   }
 
   // Lecture des fichiers de données Charts
-  readChartData (type) {
+  readData (type) {
     if (!type) {
       console.error("[LINKY] [FILES] Type de Données inconnue");
       return;
@@ -61,14 +61,39 @@ class FILES {
             return;
           }
           const linkyData = JSON.parse(data);
+
+          if (linkyData.type !== type) {
+            console.error(`[LINKY] [FILES] [${type}] Fichier cache invalide!`);
+            resolve();
+            return;
+          }
+
+          if (!linkyData.seed) {
+            console.error(`[LINKY] [FILES] [${type}] Cache invalide!`);
+            resolve();
+            return;
+          }
+
+          if (!linkyData.ignoreAnnee_n_minus_1 && (linkyData.annee_n_minus_1 !== this.config.annee_n_minus_1)) {
+            console.log(`[LINKY] [FILES] [${type}] La configuration annee_n_minus_1 a changé.`);
+            resolve();
+            return;
+          }
+
+          if (!linkyData.ignorePeriode && (linkyData.periode !== this.config.periode)) {
+            console.log(`[LINKY] [FILES] [${type}] La configuration periode a changé.`);
+            resolve();
+            return;
+          }
+
           const now = dayjs().valueOf();
           const seed = dayjs(linkyData.seed).format("DD/MM/YYYY -- HH:mm:ss");
           const next = dayjs(linkyData.seed).add(12, "hour").valueOf();
           if (now > next) {
-            log(`[${type}] Les dernieres données reçues sont > 12h, utilisation de l'API...`);
+            console.log(`[LINKY] [FILES] [${type}] Les dernières données reçues sont > 12h, utilisation de l'API...`);
             resolve();
           } else {
-            log(`[${type}] Utilisation du cache:`, seed);
+            console.log(`[LINKY] [FILES] [${type}] Utilisation du cache ${seed}`);
             resolve(linkyData);
           }
         });

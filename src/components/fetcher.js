@@ -1,3 +1,4 @@
+const dayjs = require("dayjs");
 const chart = require("./chart");
 const parser = require("./parser");
 const api = require("./api");
@@ -34,9 +35,13 @@ class FETCHER {
 
     for (const call of this.call) {
       log("[Cache] Chargement:", call);
-      datas[call] = await this.files.readChartData(call);
-      if (!datas[call]) datas[call] = await this.getData(call);
-      log("[Cache] Terminé:", call);
+      const result = await this.files.readData(call);
+      if (!result) datas[call] = await this.getData(call);
+      else {
+        const parsedData = this.parser.parseData(call, result);
+        datas[call] = await this.chart.setChartValue(call, parsedData);
+        log("[Cache] Terminé:", call);
+      }
     }
     return datas;
   }
@@ -46,8 +51,21 @@ class FETCHER {
     if (dates === null) return;
     log("Dates:", dates);
 
-    var data = {};
+    var parsedData = {};
     var error = null;
+
+    const isIgnorePeriode = () => {
+      if (type === "getLoadCurve") return true;
+      if (type === "getProductionLoadCurve") return true;
+      return false;
+    };
+
+    const isIgnoreAnnee_n_minus_1 = () => {
+      if (type === "getLoadCurve") return true;
+      if (type === "getMaxPower") return true;
+      if (type === "getProductionLoadCurve") return true;
+      return false;
+    };
 
     await this.api.request(type, dates)
       .then((result) => {
@@ -55,8 +73,15 @@ class FETCHER {
           error = true;
         } else {
           if (result.start && result.end && result.interval_reading) {
+            result.annee_n_minus_1 = this.config.annee_n_minus_1;
+            result.ignoreAnnee_n_minus_1 = isIgnoreAnnee_n_minus_1();
+            result.periode = this.config.periode;
+            result.ignorePeriode = isIgnorePeriode();
+            result.seed = dayjs().valueOf();
+            result.type = type;
             log(`[${type}] Données reçues de l'API:`, result);
-            data = this.parser.parseData(type, result);
+            this.files.saveData(type, result);
+            parsedData = this.parser.parseData(type, result);
           } else {
             console.error(`[LINKY] [${type}] Format inattendu des données:`, result);
             if (result.error) {
@@ -70,9 +95,8 @@ class FETCHER {
       });
 
     if (!error) {
-      log(`[${type}] Données collectées:`, data);
-      const chartData = this.chart.setChartValue(type, data);
-      this.files.saveChartData(type, chartData);
+      log(`[${type}] Données collectées:`, parsedData);
+      const chartData = this.chart.setChartValue(type, parsedData);
       return chartData;
     } else {
       this.retryTimer();

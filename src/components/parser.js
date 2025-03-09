@@ -15,15 +15,16 @@ class PARSER {
 
   parseData (type, result) {
     log("Démarrage...");
-    var data = {};
+    var datas = {};
     var added = 0;
     var LeapYear = false;
+    const seed = result.seed;
 
     result.interval_reading.forEach((reading) => {
       const year = dayjs(reading.date).get("year");
       const value = parseFloat(reading.value);
 
-      if (!data[year]) data[year] = [];
+      if (!datas[year]) datas[year] = [];
 
       if (type.includes("getDaily") && this.config.annee_n_minus_1 === 1) {
         var current = dayjs().set("hour", 0).set("minute", 0).set("second", 0);
@@ -59,26 +60,26 @@ class PARSER {
             if (currentIsLeapYear && dayjs(reading.date).month() === 1 && dayjs(reading.date).date() === 29) {
               LeapYear = true;
               log(`Année bissextile pour ${year}:`, { date: `${year - 1}-02-29`, value: 0 });
-              if (!data[year - 1]) data[year - 1] = [];
-              data[year - 1].push({ date: `${year - 1}-02-29`, value: 0 });
+              if (!datas[year - 1]) datas[year - 1] = [];
+              datas[year - 1].push({ date: `${year - 1}-02-29`, value: 0 });
               added++;
             }
             log(`Ajoute pour ${year}:`, { date: reading.date, value });
-            data[year].push({ date: reading.date, value });
+            datas[year].push({ date: reading.date, value });
             added++;
           }
         }
       } else {
         log(`Ajoute pour ${year}:`, { date: reading.date, value });
-        data[year].push({ date: reading.date, value });
+        datas[year].push({ date: reading.date, value });
         added++;
       }
     });
     if (LeapYear) {
       // a voir a la prochaine Année bissextile...
-      for (const year in data) {
+      for (const year in datas) {
         log(`Classements des dates pour ${year}...`);
-        data[year].sort((a, b) => {
+        datas[year].sort((a, b) => {
           if (a.date < b.date) {
             return -1;
           }
@@ -87,13 +88,13 @@ class PARSER {
           }
           return 0;
         });
-        log(`Suppression des premières données pour ${year}:`, data[year][0]);
-        data[year].shift();
+        log(`Suppression des premières données pour ${year}:`, datas[year][0]);
+        datas[year].shift();
         added--;
       }
     }
     log(`Terminé: ${added} dates trouvées.`);
-    return data;
+    return { datas, seed: seed };
   }
 }
 module.exports = PARSER;

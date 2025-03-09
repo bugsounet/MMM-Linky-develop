@@ -8,7 +8,7 @@ Si vous choisissez de récupérer les données de l'année précédente une comp
 
 Le header est également dynamique et changera en fonction de la période sélectionnée !
 
-Les données sont actualisées chaque jour entre 14h et 15h.
+Les données sont actualisées chaque jour entre 12h et 12h15.
 
 ## ScreenShots
 
@@ -110,7 +110,7 @@ Il est également possible d'afficher vos données de production d'energie.
 
 Afin d'éviter une surcharge de l'api, une mise en cache des données a été mise en place.
 
-De ce fait, lors d'un redémarrage de `MagicMirror²`, `MMM-Linky` utilisera les dernières données converties pour l'affichage graphique.
+De ce fait, lors d'un redémarrage de `MagicMirror²`, `MMM-Linky` utilisera les dernières données reçues de l'api.
 
 La validité de ce cache à été fixé à 10h.
 
@@ -130,6 +130,21 @@ Il est déconseillé d'utiliser cette commande trop souvent car l'api a un usage
 Malheurement, nous avons aucun pouvoir pour la débloquer...
 
 Pour rappel un appel API c'est une requête. si vous utilisez 2 API en config... c'est donc 2 requêtes !
+
+## Changement de configuration
+
+Afin de générer un nouveau cache, une nouvelle requête sera relancé pour les API suivantes (si utilisé)
+
+### En cas de changement de configuration `periode`
+
+* `getDailyConsumption`
+* `getMaxPower`
+* `getDailyProduction`
+
+### En cas de changement de configuration `annee_n_minus_1`
+
+* `getDailyConsumption`
+* `getDailyProduction`
 
 ## Mise à jour
 
