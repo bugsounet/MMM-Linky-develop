@@ -13,14 +13,16 @@ Les données sont actualisées chaque jour entre 12h et 12h15.
 ## ScreenShots
 
 ![APIs](https://github.com/user-attachments/assets/6c2e726b-a309-4f07-b077-42d9aac9b2ed)
-![Conso 7 derniers jours](https://github.com/user-attachments/assets/055eef27-43bb-478c-a2cb-16a451bac5b4)
-![Conso 3 derniers jours](https://github.com/user-attachments/assets/6dacfd38-d78e-4cb3-be22-be8aec980729)
-![Conso veille](https://github.com/user-attachments/assets/6e965953-0c5d-466e-accd-40d09ae3ab71)
+![Conso 7 derniers jours JPG](https://github.com/user-attachments/assets/fd2412cf-6cb1-4171-a3b7-1a9300ab2cc6)
+![Conso 3 derniers jours JPG](https://github.com/user-attachments/assets/c6658811-e6f4-4a5d-8e2c-ea0a53189fea)
+![Conso veille](https://github.com/user-attachments/assets/2e50eac0-71d2-44b4-9c78-0e9f4f1b80db)
+
 
 Possibilité de choisir entre 4 thèmes de couleur pour le graphique et d'afficher les valeurs dans les barres :
 
-![WithDataLabel](https://github.com/user-attachments/assets/a4196ed6-2289-487d-a4dc-aee6fb35ff06)
-![Capture](https://github.com/user-attachments/assets/52c76634-4543-41e0-be96-27326745fa3d)
+![WithDataLabel](https://github.com/user-attachments/assets/3ee608d5-3127-4adb-b6c3-2a3a07f6111e)
+![Capture](https://github.com/user-attachments/assets/a4d7366f-9f04-4a02-afaf-221caa9e1872)
+
 
 ## Installation
 
@@ -31,7 +33,7 @@ cd MMM-Linky
 npm run setup
 ```
 
-## Using the module
+## Utilisation du module
 
 ### Pré-requis
 
