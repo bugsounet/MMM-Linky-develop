@@ -313,7 +313,7 @@ Module.register("MMM-Linky", {
               display: displayLegend(),
               labels: { color: "white" }
             },
-            datalabels: this.config.valuebar === 1
+            datalabels: this.config.valuebar === 1 && chartType !== "line"
               ? {
                 color: this.config.valuebartextcolor === 1 ? "white" : "black",
                 anchor: "center",
@@ -346,12 +346,6 @@ Module.register("MMM-Linky", {
             },
             x: {
               ticks: { color: "#fff" }
-            }
-          },
-          elements: {
-            point: {
-              radius: 1,
-              pointStyle: false
             }
           }
         }
