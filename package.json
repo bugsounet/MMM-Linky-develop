@@ -1,6 +1,6 @@
 {
   "name": "MMM-Linky",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Un module pour récupérer et afficher les données de consommation Linky sur MagicMirror.",
   "keywords": [
     "MagicMirror",
@@ -64,5 +64,5 @@
     "stylelint-config-standard": "^37.0.0",
     "stylelint-prettier": "^5.0.3"
   },
-  "rev": "20250309"
+  "rev": "20250311"
 }
